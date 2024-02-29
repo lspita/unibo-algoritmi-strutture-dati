@@ -61,14 +61,15 @@ int main(void)
 {
     int n = 7;
 
-    int i;
-    for (i = 0; i < n; n += 7)
+    while (1)
     {
         if (n % 4 == 1 && n % 6 == 1 && n % 5 == 1)
         {
             printf("%d\n", n);
             break;
         }
+        
+        n += 7;
     }
 
     return EXIT_SUCCESS;
