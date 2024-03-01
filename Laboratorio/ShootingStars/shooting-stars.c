@@ -361,14 +361,26 @@ int check_status(int (*field)[FIELD_DIMENSION])
 
 int main(void)
 {
-    int field[FIELD_DIMENSION][FIELD_DIMENSION] = {
-        {BLACK_HOLE, BLACK_HOLE, BLACK_HOLE},
-        {BLACK_HOLE, STAR, BLACK_HOLE},
-        {BLACK_HOLE, BLACK_HOLE, BLACK_HOLE},
-    };
-
+    int field[FIELD_DIMENSION][FIELD_DIMENSION];
     int status = CONTINUE;
     Cell cell;
+
+    /* fill field */
+    int i, j;
+    for (i = 0; i < FIELD_DIMENSION; i++)
+    {
+        for (j = 0; j < FIELD_DIMENSION; j++)
+        {
+            if (i == CENTER && j == CENTER)
+            {
+                field[i][j] = STAR;
+            }
+            else
+            {
+                field[i][j] = BLACK_HOLE;
+            }
+        }
+    }
 
     while (status == CONTINUE)
     {
