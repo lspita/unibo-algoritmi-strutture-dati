@@ -24,7 +24,9 @@
 % Moreno Marzolla <moreno.marzolla@unibo.it>
 % Ultimo aggiornamento: 2024-01-23
 
-![Tomasz Sienicki (Own work), CC BY 3.0, <https://commons.wikimedia.org/w/index.php?curid=10330603>](phone-book.jpg "Elenco telefonico")
+![Tomasz Sienicki (Own work), CC BY 3.0,
+<https://commons.wikimedia.org/w/index.php?curid=10330603>](phone-book.jpg
+"Elenco telefonico")
 
 Siete stati assunti come consulenti dalla IATM S.p.A. (Importante
 Azienda di Telefonia Mobile) che è alle prese con il problema
@@ -83,42 +85,40 @@ valore ripetuto sia esattamente $t$?
 
 ***/
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 /* MAXN è il massimo numero di valori che possono essere presenti nel
    file. Questo parametro si può considerare fissato, ma il programma
    dovrebbe funzionare con qualsiasi valore di MAXN */
 #define MAXN 1000000
 
+int main(int argc, char *argv[]) {
+  /* [TODO] Il programma fornitosi limita a leggere e stampare il
+     contenuto del file di input; lo si modifichi per risolvere il
+     problema proposto, anche definendo ulteriori funzioni di
+     supporto. */
 
-int main( int argc, char *argv[] )
-{
-    /* [TODO] Il programma fornitosi limita a leggere e stampare il
-       contenuto del file di input; lo si modifichi per risolvere il
-       problema proposto, anche definendo ulteriori funzioni di
-       supporto. */
+  FILE *fin;
+  int num_tel;
 
-    FILE *fin;
-    int num_tel;
+  if (argc != 2) {
+    fprintf(stderr, "Usage: %s input_file_name\n", argv[0]);
+    return EXIT_FAILURE;
+  }
 
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s input_file_name\n", argv[0]);
-        return EXIT_FAILURE;
-    }
+  fin = fopen(argv[1], "r");
+  if (fin == NULL) {
+    fprintf(stderr, "Can not open \"%s\"\n", argv[1]);
+    return EXIT_FAILURE;
+  }
 
-    fin = fopen(argv[1], "r");
-    if (fin == NULL) {
-        fprintf(stderr, "Can not open \"%s\"\n", argv[1]);
-        return EXIT_FAILURE;
-    }
+  while (1 == fscanf(fin, "%d", &num_tel)) {
+    printf("%d\n", num_tel);
+  }
 
-    while (1 == fscanf(fin, "%d", &num_tel)) {
-        printf("%d\n", num_tel);
-    }
-
-    fclose(fin);
-    return EXIT_SUCCESS;
+  fclose(fin);
+  return EXIT_SUCCESS;
 }
