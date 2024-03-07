@@ -153,56 +153,64 @@ consentire all'utente di giocare una partita.
 
 int board[3][3]; /* board[i][j] == 0 indica un buco nero, 1 indica una stella */
 
-enum { BLACK_HOLE, STAR };
+enum
+{
+    BLACK_HOLE,
+    STAR
+};
 
 int nbor[9][3][3] = {
-    {{1, 1, 0}, 	/* cella 0 con il suo vicinato	*/
+    {{1, 1, 0}, /* cella 0 con il suo vicinato	*/
      {1, 1, 0},
      {0, 0, 0}},
 
-    {{1, 1, 1}, 	/* cella 1 con il suo vicinato 	*/
+    {{1, 1, 1}, /* cella 1 con il suo vicinato 	*/
      {0, 0, 0},
      {0, 0, 0}},
 
-    {{0, 1, 1}, 	/* cella 2 con il suo vicinato 	*/
+    {{0, 1, 1}, /* cella 2 con il suo vicinato 	*/
      {0, 1, 1},
      {0, 0, 0}},
 
-    {{1, 0, 0}, 	/* cella 3 con il suo vicinato 	*/
+    {{1, 0, 0}, /* cella 3 con il suo vicinato 	*/
      {1, 0, 0},
      {1, 0, 0}},
 
-    {{0, 1, 0}, 	/* cella 4 con il suo vicinato 	*/
+    {{0, 1, 0}, /* cella 4 con il suo vicinato 	*/
      {1, 1, 1},
      {0, 1, 0}},
 
-    {{0, 0, 1}, 	/* cella 5 con il suo vicinato 	*/
+    {{0, 0, 1}, /* cella 5 con il suo vicinato 	*/
      {0, 0, 1},
      {0, 0, 1}},
 
-    {{0, 0, 0}, 	/* cella 6 con il suo vicinato 	*/
+    {{0, 0, 0}, /* cella 6 con il suo vicinato 	*/
      {1, 1, 0},
      {1, 1, 0}},
 
-    {{0, 0, 0}, 	/* cella 7 con il suo vicinato 	*/
+    {{0, 0, 0}, /* cella 7 con il suo vicinato 	*/
      {0, 0, 0},
      {1, 1, 1}},
 
-    {{0, 0, 0}, 	/* cella 8 con il suo vicinato 	*/
+    {{0, 0, 0}, /* cella 8 con il suo vicinato 	*/
      {0, 1, 1},
-     {0, 1, 1}}
-};
+     {0, 1, 1}}};
 
 /* Stampa la griglia memorizzata nell'intero |stars|. */
-void print_board( void )
+void print_board(void)
 {
     int i, j, idx = 0;
     printf("\n");
-    for (i=0; i<3; i++) {
-        for (j=0; j<3; j++) {
-            if (board[i][j] == BLACK_HOLE) {
+    for (i = 0; i < 3; i++)
+    {
+        for (j = 0; j < 3; j++)
+        {
+            if (board[i][j] == BLACK_HOLE)
+            {
                 printf(". ");
-            } else {
+            }
+            else
+            {
                 printf("%d ", idx);
             }
             idx++;
@@ -212,13 +220,22 @@ void print_board( void )
     printf("\n");
 }
 
-typedef enum {INVALID=0, OK, WON, LOST, RESIGNED} Move;
+typedef enum
+{
+    INVALID = 0,
+    OK,
+    WON,
+    LOST,
+    RESIGNED
+} Move;
 
-void init_board( void )
+void init_board(void)
 {
     int i, j;
-    for (i=0; i<3; i++) {
-        for (j=0; j<3; j++) {
+    for (i = 0; i < 3; i++)
+    {
+        for (j = 0; j < 3; j++)
+        {
             board[i][j] = (i == 1 && j == 1);
         }
     }
@@ -227,14 +244,14 @@ void init_board( void )
 /* Inverte il contenuto della cella in posizione i,j */
 void inverti(int i, int j)
 {
-    assert(i>=0 && i<3);
-    assert(j>=0 && j<3);
+    assert(i >= 0 && i < 3);
+    assert(j >= 0 && j < 3);
     board[i][j] = 1 - board[i][j];
 }
 
 /* ritorna true (nonzero) se e solo se la configurazione corrente è
    quella vincente */
-int won( void )
+int won(void)
 {
     /* È possibile determinare se la configurazione è quella vincente
        senza un confronto esplicito con la matrice winning_conf[][],
@@ -244,8 +261,10 @@ int won( void )
                                            {1, 0, 1},
                                            {1, 1, 1}};
     int i, j;
-    for (i=0; i<3; i++) {
-        for (j=0; j<3; j++) {
+    for (i = 0; i < 3; i++)
+    {
+        for (j = 0; j < 3; j++)
+        {
             if (board[i][j] != winning_conf[i][j])
                 return 0;
         }
@@ -255,11 +274,13 @@ int won( void )
 
 /* ritorna true (nonzero) se e solo se la configurazione corrente è
    quella perdente */
-int lost( void )
+int lost(void)
 {
     int i, j;
-    for (i=0; i<3; i++) {
-        for (j=0; j<3; j++) {
+    for (i = 0; i < 3; i++)
+    {
+        for (j = 0; j < 3; j++)
+        {
             if (board[i][j] == STAR)
                 return 0;
         }
@@ -284,52 +305,60 @@ int lost( void )
 */
 Move shoot(int k)
 {
-    const int r = k/3; /* row */
-    const int c = k%3; /* col */
+    const int r = k / 3; /* row */
+    const int c = k % 3; /* col */
     int i, j;
 
-    if (k<0 || k>8)
+    if (k < 0 || k > 8)
         return INVALID;
 
     if (board[r][c] != STAR)
         return INVALID;
 
-    for (i=0; i<3; i++) {
-        for (j=0; j<3; j++) {
+    for (i = 0; i < 3; i++)
+    {
+        for (j = 0; j < 3; j++)
+        {
             if (nbor[k][i][j])
-                inverti(i,j);
+                inverti(i, j);
         }
     }
 
-    if (won( ))
+    if (won())
         return WON;
-    else if (lost( ))
+    else if (lost())
         return LOST;
     else
         return OK;
 }
 
-int main( void )
+int main(void)
 {
     Move outcome;
 
-    init_board( );
-    print_board( );
-    do {
+    init_board();
+    print_board();
+    do
+    {
         int k;
         printf("Your move ( <0 to resign)? ");
         scanf("%d", &k);
-        if ( k < 0 ) {
+        if (k < 0)
+        {
             outcome = RESIGNED;
-        } else {
+        }
+        else
+        {
             outcome = shoot(k);
-            if ( outcome == INVALID ) {
+            if (outcome == INVALID)
+            {
                 printf("\nInvalid move\n");
             }
-            print_board( );
+            print_board();
         }
     } while (outcome == OK || outcome == INVALID);
-    switch (outcome) {
+    switch (outcome)
+    {
     case WON:
         printf("You won!\n");
         break;

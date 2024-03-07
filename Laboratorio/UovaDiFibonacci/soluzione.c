@@ -49,19 +49,20 @@ $n>0$ che goda delle proprietà precedenti.
 ***/
 #include <stdio.h>
 
-int main( void )
+int main(void)
 {
     /* Dalla specifica del problema, n deve essere multiplo di 7; di
        conseguenza, esaminiamo solo i multipli di 7 per individuare il
        più piccolo di essi che goda delle rimanenti proprietà */
     int n = 0, trovato = 0;
-    do {
+    do
+    {
         n += 7;
-        trovato = ((n%2 == 1) &&
-                   (n%3 == 1) &&
-                   (n%4 == 1) &&
-                   (n%5 == 1) &&
-                   (n%6 == 1));
+        trovato = ((n % 2 == 1) &&
+                   (n % 3 == 1) &&
+                   (n % 4 == 1) &&
+                   (n % 5 == 1) &&
+                   (n % 6 == 1));
     } while (!trovato);
     printf("%d\n", n); /* il risultato corretto e' 301 */
     return 0;
