@@ -94,6 +94,9 @@ valore ripetuto sia esattamente $t$?
    file. Questo parametro si può considerare fissato, ma il programma
    dovrebbe funzionare con qualsiasi valore di MAXN */
 #define MAXN 1000000
+#define MIN_TEL 300000
+#define MAX_TEL 599999
+#define RANGE (MAX_TEL - MIN_TEL + 1)
 
 int main(int argc, char *argv[]) {
   /* [TODO] Il programma fornitosi limita a leggere e stampare il
@@ -103,6 +106,10 @@ int main(int argc, char *argv[]) {
 
   FILE *fin;
   int num_tel;
+  int min = RANGE;
+
+  int *occorrenze = (int *)calloc(RANGE, sizeof(int));
+  assert(occorrenze != NULL);
 
   if (argc != 2) {
     fprintf(stderr, "Usage: %s input_file_name\n", argv[0]);
@@ -116,8 +123,15 @@ int main(int argc, char *argv[]) {
   }
 
   while (1 == fscanf(fin, "%d", &num_tel)) {
-    printf("%d\n", num_tel);
+    num_tel -= MIN_TEL;
+    occorrenze[num_tel]++;
+    if (occorrenze[num_tel] > 1 && min > num_tel) {
+      min = num_tel;
+    }
   }
+
+  min += MIN_TEL;
+  printf("%d\n", min);
 
   fclose(fin);
   return EXIT_SUCCESS;
