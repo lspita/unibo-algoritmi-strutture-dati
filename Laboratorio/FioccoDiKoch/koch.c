@@ -24,9 +24,11 @@
 % Moreno Marzolla <moreno.marzolla@unibo.it>
 % Ultimo aggiornamento: 2024-03-05
 
-(Crediti: prof. [Violetta Lonati](http://lonati.di.unimi.it/), Università di Milano)
+(Crediti: prof. [Violetta Lonati](http://lonati.di.unimi.it/), Università di
+Milano)
 
-![Niels Fabian Helge von Koch By Olof Edlund, Public Domain, <https://commons.wikimedia.org/w/index.php?curid=10118465>](Helge_von_Koch.jpg)
+![Niels Fabian Helge von Koch By Olof Edlund, Public Domain,
+<https://commons.wikimedia.org/w/index.php?curid=10118465>](Helge_von_Koch.jpg)
 
 ## Libreria `libpsgraph.c`
 
@@ -84,7 +86,7 @@ La libreria `libpsgraph` va usata in questo modo:
     negativo, nel qual caso gira in senso antiorario.
 
   * `setcolor(r, g, b)`: imposta il colore a $(r, g, b)$, dove i
-    parametri possono assumere valori reali in $[0, 1]$.  `setcolor(0, 0, 0)` 
+    parametri possono assumere valori reali in $[0, 1]$.  `setcolor(0, 0, 0)`
     è il colore nero, `setcolor(1, 1, 1)` è il colore bianco.
 
 * Alla fine, prima di terminare il programma occorre invocare la
@@ -150,7 +152,8 @@ $n$: esso si ottiene da un triangolo equilatero i cui lati siano
 costituiti da tre curve di Koch di ordine $n$ e lunghezza $x$ (Figura
 2).
 
-![Figura 2: Fiocco di neve di Koch di ordine $n=4$ con $x=50$.](koch-snowflake.png)
+![Figura 2: Fiocco di neve di Koch di ordine $n=4$ con
+$x=50$.](koch-snowflake.png)
 
 ## Domande
 
@@ -178,29 +181,56 @@ costituiti da tre curve di Koch di ordine $n$ e lunghezza $x$ (Figura
 - [libpsgraph.h](libpsgraph.h)
 
 ***/
+#include "libpsgraph.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "libpsgraph.h"
+
+#define SLOPE 60
 
 /* Disegna la curva di Koch di ordine n e lunghezza x */
-void koch(double x, int n)
-{
-  /* [TODO] */
+void koch(double x, int n) {
+  if (n == 0) {
+    draw(x);
+    return;
+  }
+
+  koch(x, n - 1);
+  turn(-SLOPE);
+  koch(x, n - 1);
+  turn(SLOPE * 2);
+  koch(x, n - 1);
+  turn(-SLOPE);
+  koch(x, n - 1);
 }
 
+void koch_polygon(int sides, double x, int n) {
+  int i;
+  double sum_internal_angles;
+  double internal_angle;
+  double ext_angle;
 
-int main( void )
-{
-    /* L'esempio seguente disegna un quadrato, e serve per prendere
-       familiarità con la libreria `libpsgraph`.  Modificare il codice
-       per disegnare la curva di Koch, completando la funzione koch(x,
-       n) definita sopra e invocandola opportunamente (si suggerisce
-       di usare n=4). */
-    start("square.ps");
-    draw(100); turn(90);
-    draw(100); turn(90);
-    draw(100); turn(90);
-    draw(100);
-    end();
-    return EXIT_SUCCESS;
+  if (sides == 0) {
+    return;
+  }
+
+  sum_internal_angles = 180.0 * ((double)sides - 2);
+  internal_angle = sum_internal_angles / (double)sides;
+  ext_angle = 180.0 - internal_angle;
+
+  for (i = 0; i < sides; i++) {
+    koch(x, n);
+    turn(ext_angle);
+  }
+}
+
+int main(void) {
+  /* L'esempio seguente disegna un quadrato, e serve per prendere
+     familiarità con la libreria `libpsgraph`.  Modificare il codice
+     per disegnare la curva di Koch, completando la funzione koch(x,
+     n) definita sopra e invocandola opportunamente (si suggerisce
+     di usare n=4). */
+  start("koch.ps");
+  koch_polygon(3, 5, 4);
+  end();
+  return EXIT_SUCCESS;
 }
