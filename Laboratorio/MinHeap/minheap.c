@@ -505,6 +505,7 @@ HeapElem minheap_delete_min2(MinHeap *h) {
   HeapElem result;
   assert(!minheap_is_empty(h));
   result = h->heap[0];
+  h->n--;
   h->heap[0] = h->heap[h->n];
   move_down(h, 0);
   return result;
