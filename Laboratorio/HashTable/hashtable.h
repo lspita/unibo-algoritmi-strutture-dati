@@ -22,15 +22,15 @@
 #define HASHTABLE_H
 
 typedef struct HashNode {
-    char *key;
-    int value;
-    struct HashNode *next;
+  char *key;
+  int value;
+  struct HashNode *next;
 } HashNode;
 
 typedef struct {
-    HashNode **items;
-    int size;
-    int values_count;
+  HashNode **items;
+  int size;
+  int values_count;
 } HashTable;
 
 /* Questa funzione mappa un intero k arbitrario in una posizione
