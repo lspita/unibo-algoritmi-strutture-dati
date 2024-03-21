@@ -222,15 +222,58 @@ cui 4593 distinte)
    del file. */
 int read_word(FILE *f, char *s)
 {
-    /* [TODO] */
-    s[0] = '\0';
-    return 0;
+    int count = 0;
+    char c = '\0';
+    int run = 1;
+    while (run == 1 && count < WORDLEN - 1)
+    {
+        c = fgetc(f);
+        if (c == EOF)
+        {
+            return EOF;
+        }
+        if (isalpha(c))
+        {
+            s[count] = c;
+            count++;
+        }
+        else
+        {
+            run = 0;
+        }
+    }
+    s[count] = '\0';
+    return count;
+}
+
+int unique_words(HashTable *h)
+{
+    int i, unique = 0;
+    assert(h != NULL);
+    for (i = 0; i < h->size; i++)
+    {
+        const HashNode *iter;
+        for (iter = h->items[i]; iter != NULL; iter = iter->next)
+        {
+            if (iter->value == 1)
+            {
+                unique++;
+            }
+        }
+    }
+    return unique;
 }
 
 int main(int argc, char *argv[])
 {
     FILE *filein = stdin;
     char w[WORDLEN]; /* buffer per lettura delle parole */
+    int count_words = 0;
+    int count_unique_words = 0;
+    int word_len = 0;
+    HashTable *h;
+    int occurences;
+    HashNode *word_node;
 
     if (argc != 2)
     {
@@ -253,12 +296,28 @@ int main(int argc, char *argv[])
        dal file. Lo si modifichi per inserire le parole lette in una
        tabella hash e al termine stampare il numero di elementi della
        tabella chiamando la funzione `ht_round()`. */
-    while (read_word(filein, w))
+
+    h = ht_create(1000);
+    do
     {
-        printf("%s\n", w);
-    }
+        word_len = read_word(filein, w);
+        if (word_len > 0)
+        {
+            occurences = 0;
+            word_node = ht_search(h, w, NULL);
+            if (word_node != NULL)
+            {
+                occurences = word_node->value;
+            }
+            ht_insert(h, w, occurences + 1);
+            count_words++;
+        }
+    } while (word_len != EOF);
+
     if (filein != stdin)
         fclose(filein);
+    count_unique_words = unique_words(h);
+    printf("Parole: %d\nParole Uniche: %d\n", count_words, count_unique_words);
 
     return EXIT_SUCCESS;
 }
