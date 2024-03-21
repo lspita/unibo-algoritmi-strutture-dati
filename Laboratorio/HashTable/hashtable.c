@@ -289,29 +289,95 @@ static void free_node(HashNode *n)
     free(n);
 }
 
+unsigned long key_to_index(HashTable *h, const char *key)
+{
+    return hash_function(h, encode(key));
+}
+
 int ht_insert(HashTable *h, const char *key, int value)
 {
     unsigned long index;
-    HashNode *head = NULL, *node = NULL;
+    HashNode *node;
+    assert(h != NULL);
 
-    if (h->size)
+    node = ht_search(h, key, &index);
+    if (node == NULL)
     {
+        node = hashtable_new_node(key, value, h->items[index]);
+        h->items[index] = node;
+        h->values_count++;
+        return 1;
     }
-
-    /* [TODO] */
-    return -1; /* Cambiare il valore di ritorno in modo opportuno */
+    else
+    {
+        node->value = value;
+        return 0;
+    }
 }
 
-HashNode *ht_search(HashTable *h, const char *key)
+HashNode *ht_search(HashTable *h, const char *key, unsigned long *out_index)
 {
-    /* [TODO] */
-    return NULL; /* Cambiare il valore di ritorno in modo opportuno */
+    unsigned long index;
+    HashNode *head, *iter;
+
+    index = key_to_index(h, key);
+    if (out_index != NULL)
+    {
+        *out_index = index;
+    }
+    head = h->items[index];
+
+    iter = head;
+    while (iter != NULL)
+    {
+        if (keys_equal(iter->key, key))
+        {
+            return iter;
+        }
+        iter = iter->next;
+    }
+
+    return NULL;
 }
 
 int ht_delete(HashTable *h, const char *key)
 {
-    /* [TODO] */
-    return -1; /* Cambiare il valore di ritorno in modo opportuno */
+    unsigned long index;
+    HashNode *head, *iter, *prev = NULL;
+    int found;
+
+    index = key_to_index(h, key);
+    head = h->items[index];
+    iter = head;
+    found = 0;
+    while (iter != NULL && found == 0)
+    {
+        if (keys_equal(iter->key, key))
+        {
+            found = 1;
+        }
+        else
+        {
+            prev = iter;
+            iter = iter->next;
+        }
+    }
+    if (iter == NULL)
+    {
+        return 0;
+    }
+    if (prev != NULL)
+    {
+        prev->next = iter->next;
+    }
+    else
+    {
+        h->items[index] = iter->next;
+    }
+    free_node(iter);
+    h->values_count--;
+
+    return 1;
 }
 
 void ht_clear(HashTable *h)

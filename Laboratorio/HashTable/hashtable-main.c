@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
                 fscanf(filein, "%s", key);
                 printf("ht_search(table, \"%s\") = ", key);
                 fflush(stdout);
-                item = ht_search(table, key);
+                item = ht_search(table, key, NULL);
                 if (item == NULL)
                 {
                     printf("NOT FOUND\n");

@@ -61,7 +61,7 @@ int ht_insert(HashTable *h, const char *key, int value);
 
 /* Ritorna il nodo contenente le informazioni associate alla chiave
    `key`; se la chiave non è presente, ritorna NULL */
-HashNode *ht_search(HashTable *h, const char *key);
+HashNode *ht_search(HashTable *h, const char *key, unsigned long *out_index);
 
 /* Rimuove la chiave `key` e il valore associato dalla hash table; se
    la chiave non è presente, non fa nulla. Ritorna 1 se la chiave era
