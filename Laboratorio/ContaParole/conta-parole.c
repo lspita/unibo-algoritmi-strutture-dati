@@ -196,23 +196,24 @@ char`, perché in caso di fine file, la funzione `fetc()` restituisce
 ## File
 
 - [conta-parole.c](conta-parole.c)
-- [the-time-machine.txt](the-time-machine.txt) ([Fonte](http://www.gutenberg.org/files/35/35-0.txt)) (32886 parole, di cui 4593 distinte)
+- [the-time-machine.txt](the-time-machine.txt) ([Fonte](http://www.gutenberg.org/files/35/35-0.txt)) (32886 parole, di
+cui 4593 distinte)
 - [war-and-peace.txt](war-and-peace.txt) ([Fonte](http://www.gutenberg.org/files/2600/2600-0.txt))
-- [the-hound-of-the-baskervilles.txt](the-hound-of-the-baskervilles.txt) ([Fonte](http://www.gutenberg.org/files/2852/2852-0.txt))
+- [the-hound-of-the-baskervilles.txt](the-hound-of-the-baskervilles.txt)
+([Fonte](http://www.gutenberg.org/files/2852/2852-0.txt))
 - [the-war-of-the-worlds.txt](the-war-of-the-worlds.txt) ([Fonte](http://www.gutenberg.org/files/36/36-0.txt))
 - [la-divina-commedia.txt](la-divina-commedia.txt) ([Fonte](https://www.gutenberg.org/ebooks/1012.txt.utf-8))
 
 ***/
 
-#include <stdio.h>
-#include <stdlib.h>
+#include "hashtable.h"
 #include <assert.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include "hashtable.h"
 
 #define WORDLEN 100
-
 
 /* Legge la prossima parola dal file `f` e la memorizza bel buffer `s`
    di lunghezza `WORDLEN`; `s` deve essere già stato allocato dal
@@ -226,19 +227,22 @@ int read_word(FILE *f, char *s)
     return 0;
 }
 
-int main( int argc, char *argv[] )
+int main(int argc, char *argv[])
 {
     FILE *filein = stdin;
     char w[WORDLEN]; /* buffer per lettura delle parole */
 
-    if (argc != 2) {
+    if (argc != 2)
+    {
         fprintf(stderr, "Usage: %s inputfile\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    if (strcmp(argv[1], "-") != 0) {
+    if (strcmp(argv[1], "-") != 0)
+    {
         filein = fopen(argv[1], "r");
-        if (filein == NULL) {
+        if (filein == NULL)
+        {
             fprintf(stderr, "Can not open %s\n", argv[1]);
             return EXIT_FAILURE;
         }
@@ -249,10 +253,12 @@ int main( int argc, char *argv[] )
        dal file. Lo si modifichi per inserire le parole lette in una
        tabella hash e al termine stampare il numero di elementi della
        tabella chiamando la funzione `ht_round()`. */
-    while (read_word(filein, w)) {
+    while (read_word(filein, w))
+    {
         printf("%s\n", w);
     }
-    if (filein != stdin) fclose(filein);
+    if (filein != stdin)
+        fclose(filein);
 
     return EXIT_SUCCESS;
 }
