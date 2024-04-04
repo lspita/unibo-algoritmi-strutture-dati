@@ -26,10 +26,10 @@
 
 int randab(int a, int b)
 {
-    return a + rand() % (b-a+1);
+    return a + rand() % (b - a + 1);
 }
 
-void inputgen( int nops )
+void inputgen(int nops)
 {
     const int PROB_INS = 44;
     const int PROB_DEL = 24;
@@ -40,20 +40,32 @@ void inputgen( int nops )
 
     assert(PROB_INS + PROB_DEL + PROB_SEA + PROB_HEI + PROB_SIZ <= 100);
     srand(nops);
-    for (i=0; i<nops; i++) {
+    for (i = 0; i < nops; i++)
+    {
         const int coin = randab(0, 99);
         const int val = randab(0, 99);
-        if (coin < PROB_INS) {
+        if (coin < PROB_INS)
+        {
             printf("+ %d\n", val);
-        } else if (coin < PROB_INS + PROB_DEL) {
+        }
+        else if (coin < PROB_INS + PROB_DEL)
+        {
             printf("- %d\n", val);
-        } else if (coin < PROB_INS + PROB_DEL + PROB_SEA) {
+        }
+        else if (coin < PROB_INS + PROB_DEL + PROB_SEA)
+        {
             printf("? %d\n", val);
-        } else if (coin < PROB_INS + PROB_DEL + PROB_SEA + PROB_HEI) {
+        }
+        else if (coin < PROB_INS + PROB_DEL + PROB_SEA + PROB_HEI)
+        {
             printf("h\n");
-        } else if (coin < PROB_INS + PROB_DEL + PROB_SEA + PROB_HEI + PROB_SIZ) {
+        }
+        else if (coin < PROB_INS + PROB_DEL + PROB_SEA + PROB_HEI + PROB_SIZ)
+        {
             printf("s\n");
-        } else {
+        }
+        else
+        {
             printf("p\n");
         }
     }
@@ -61,7 +73,7 @@ void inputgen( int nops )
 }
 
 /* Nota: il main assume che BSTKey sia il tipo "int" */
-int main( int argc, char *argv[] )
+int main(int argc, char *argv[])
 {
     char op;
     BSTKey k;
@@ -70,19 +82,23 @@ int main( int argc, char *argv[] )
     FILE *filein = stdin;
     int retval;
 
-    if (argc < 2 || argc > 3) {
+    if (argc < 2 || argc > 3)
+    {
         fprintf(stderr, "Usage: %s filename\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    if (strcmp(argv[1], "inputgen") == 0) {
+    if (strcmp(argv[1], "inputgen") == 0)
+    {
         inputgen(atoi(argv[2]));
         return EXIT_SUCCESS;
     }
 
-    if (strcmp(argv[1], "-") != 0) {
+    if (strcmp(argv[1], "-") != 0)
+    {
         filein = fopen(argv[1], "r");
-        if (filein == NULL) {
+        if (filein == NULL)
+        {
             fprintf(stderr, "Can not open %s\n", argv[1]);
             return EXIT_FAILURE;
         }
@@ -90,15 +106,20 @@ int main( int argc, char *argv[] )
 
     T = bst_create();
 
-    while (1 == fscanf(filein, " %c", &op)) {
-        switch (op) {
+    while (1 == fscanf(filein, " %c", &op))
+    {
+        switch (op)
+        {
         case '+': /* insert */
             fscanf(filein, "%d", &k);
             printf("bst_insert(T, %d) = ", k);
             retval = bst_insert(T, k);
-            if (retval) {
+            if (retval)
+            {
                 printf("OK\n");
-            } else {
+            }
+            else
+            {
                 printf("ALREADY PRESENT\n");
             }
             break;
@@ -106,10 +127,13 @@ int main( int argc, char *argv[] )
             fscanf(filein, "%d", &k);
             printf("bst_delete(T, %d) = ", k);
             n = bst_search(T, k);
-            if (n) {
+            if (n)
+            {
                 bst_delete(T, n);
                 printf("OK\n");
-            } else {
+            }
+            else
+            {
                 printf("NOT FOUND\n");
             }
             break;
@@ -117,9 +141,12 @@ int main( int argc, char *argv[] )
             fscanf(filein, "%d", &k);
             printf("bst_search(T, %d) = ", k);
             n = bst_search(T, k);
-            if (n != NULL) {
+            if (n != NULL)
+            {
                 printf("FOUND\n");
-            } else {
+            }
+            else
+            {
                 printf("NOT FOUND\n");
             }
             break;
@@ -139,7 +166,8 @@ int main( int argc, char *argv[] )
     }
 
     bst_destroy(T);
-    if (filein != stdin) fclose(filein);
+    if (filein != stdin)
+        fclose(filein);
 
     return EXIT_SUCCESS;
 }

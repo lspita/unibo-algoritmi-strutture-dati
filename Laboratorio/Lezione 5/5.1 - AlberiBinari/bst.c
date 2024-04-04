@@ -197,15 +197,18 @@ Per eseguire in ambiente Windows:
    altre operazioni; può tuttavia essere utile in fase di sviluppo del
    codice, e viene pertanto resa disponibile.
 */
-static void bst_check_rec( const BST* T, const BSTNode *n )
+static void bst_check_rec(const BST *T, const BSTNode *n)
 {
-    if (n != NULL) {
-        if (n->left) {
+    if (n != NULL)
+    {
+        if (n->left)
+        {
             assert(n->left->key <= n->key);
             assert(n->left->parent == n);
             bst_check_rec(T, n->left);
         }
-        if (n->right) {
+        if (n->right)
+        {
             assert(n->right->key > n->key);
             assert(n->right->parent == n);
             bst_check_rec(T, n->right);
@@ -213,16 +216,16 @@ static void bst_check_rec( const BST* T, const BSTNode *n )
     }
 }
 
-static void bst_check( const BST* T )
+static void bst_check(const BST *T)
 {
     if (T->root)
         assert(T->root->parent == NULL);
     bst_check_rec(T, T->root);
 }
 
-BST *bst_create( void )
+BST *bst_create(void)
 {
-    BST *T = (BST*)malloc(sizeof(*T));
+    BST *T = (BST *)malloc(sizeof(*T));
     assert(T != NULL);
 
     T->root = NULL;
@@ -235,7 +238,8 @@ BST *bst_create( void )
    nodo `n` e da tutti i nodi che discendono da esso */
 static void bst_clear_rec(BSTNode *n)
 {
-    if (n != NULL) {
+    if (n != NULL)
+    {
         bst_clear_rec(n->left);
         bst_clear_rec(n->right);
         free(n);
@@ -332,7 +336,8 @@ static BSTNode *bst_minimum(BSTNode *n)
 {
     assert(n != NULL);
 
-    while (n->left != NULL) {
+    while (n->left != NULL)
+    {
         n = n->left;
     }
     return n;
@@ -382,10 +387,11 @@ int bst_height(const BST *T)
    sono il contenuto del sottoalbero sinistro e destro di `n`.  Se `n`
    è vuoto (cioè n == NULL), stampa `()`
 */
-static void bst_print_rec( const BSTNode *n )
+static void bst_print_rec(const BSTNode *n)
 {
     printf("(");
-    if (n != NULL) {
+    if (n != NULL)
+    {
         printf("%d ", n->key);
         bst_print_rec(n->left);
         printf(" ");
@@ -396,7 +402,7 @@ static void bst_print_rec( const BSTNode *n )
 
 /* Nota: la funzione di stampa assume che `BSTKey` sia il tipo
    `int` */
-void bst_print( const BST *T )
+void bst_print(const BST *T)
 {
     assert(T != NULL);
 
@@ -414,9 +420,10 @@ void bst_print( const BST *T )
    dal margine sinistro per fare "rientrare" correttamente il
    sottoalbero. Suggerisco di stampare 3*`depth` spazi prima della
    chiave di `n`. */
-static void bst_pretty_print_rec( const BSTNode *n, int depth )
+static void bst_pretty_print_rec(const BSTNode *n, int depth)
 {
-    if (n != NULL) {
+    if (n != NULL)
+    {
         /* [TODO] Si suggerisce di procedere come segue:
 
            1. Stampa ricorsivamente il sottoalbero destro invocando
@@ -430,7 +437,7 @@ static void bst_pretty_print_rec( const BSTNode *n, int depth )
     }
 }
 
-void bst_pretty_print( const BST *T )
+void bst_pretty_print(const BST *T)
 {
     assert(T != NULL);
     bst_pretty_print_rec(T->root, 0);

@@ -25,21 +25,23 @@
 typedef int BSTKey;
 
 /* Struttura che rappresenta un nodo del BST */
-typedef struct BSTNode {
-    BSTKey key;
-    struct BSTNode *parent, *left, *right;
+typedef struct BSTNode
+{
+   BSTKey key;
+   struct BSTNode *parent, *left, *right;
 } BSTNode;
 
 /* Struttura che rappresenta un BST; "size" indica il numero di nodi
    dell'albero, in modo che sia possibile avere tale informazione in
    tempo O(1) senza bisogno di contarli ogni volta. */
-typedef struct {
-    BSTNode *root;
-    int size;
+typedef struct
+{
+   BSTNode *root;
+   int size;
 } BST;
 
 /* Restituisce un nuovo BST inizialmente vuoto */
-BST *bst_create( void );
+BST *bst_create(void);
 
 /* Svuota l'albero rimuovendo tutti i nodi in esso contenuto; è
    necessario liberare la memoria occupata dai nodi. Al termine di

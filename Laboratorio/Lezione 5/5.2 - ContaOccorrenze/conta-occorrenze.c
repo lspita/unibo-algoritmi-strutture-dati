@@ -315,12 +315,12 @@ char`, perché in caso di fine file, la funzione `fetc()` restituisce
 
 #define WORDLEN 128
 
-typedef struct BSTNode {
+typedef struct BSTNode
+{
     char *s;
     int count;
     struct BSTNode *left, *right;
 } BSTNode;
-
 
 /* Legge la prossima parola dal file `f` e la memorizza nel buffer `s`
    di lunghezza `WORDLEN`; il buffer deve essere già stato allocato
@@ -351,33 +351,38 @@ BSTNode *insert(const char *s, BSTNode *t)
 
 /* TODO: aggiungere tutte le funzioni che si ritengono necessarie. */
 
-int main( int argc, char *argv[] )
+int main(int argc, char *argv[])
 {
     FILE *filein = stdin;
     int nwords;
     char s[WORDLEN];
     BSTNode *t = NULL;
 
-    if (argc != 2) {
+    if (argc != 2)
+    {
         fprintf(stderr, "Usage: %s inputfile\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    if (strcmp(argv[1], "-") != 0) {
+    if (strcmp(argv[1], "-") != 0)
+    {
         filein = fopen(argv[1], "r");
-        if (filein == NULL) {
+        if (filein == NULL)
+        {
             fprintf(stderr, "Can not open %s\n", argv[1]);
             return EXIT_FAILURE;
         }
     }
-    while (read_word(filein, s)) {
+    while (read_word(filein, s))
+    {
         /* printf("%s\n", s); per verificare quale parola è stata letta */
         nwords++;
         t = insert(s, t);
     }
     /* [TODO] Stampare il contenuto dell'albero con una visita in
        preordine (da realizare). */
-    if (filein != stdin) fclose(filein);
+    if (filein != stdin)
+        fclose(filein);
 
     return EXIT_SUCCESS;
 }
