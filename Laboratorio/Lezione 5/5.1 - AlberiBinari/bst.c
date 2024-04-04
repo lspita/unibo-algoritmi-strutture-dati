@@ -262,13 +262,46 @@ void bst_destroy(BST *T)
     free(T);
 }
 
+static BSTNode *bst_search_rec(BSTNode *n, BSTKey k)
+{
+    if (n == NULL)
+    {
+        return NULL;
+    }
+
+    if (n->key == k)
+    {
+        return n;
+    }
+    if (k < n->key)
+    {
+        return bst_search_rec(n->left, k);
+    }
+    else
+    {
+        return bst_search_rec(n->right, k);
+    }
+}
+
 BSTNode *bst_search(const BST *T, BSTKey k)
 {
     assert(T != NULL);
 
-    /* [TODO] questa funzione può essere realizzata, a scelta, in modo
-       iterativo o ricorsivo. */
-    return NULL; /* valore di ritorno fittizio per evitare warning del compilatore */
+    return bst_search_rec(T->root, k);
+}
+
+static BSTNode *bst_node_create(BSTKey key, BSTNode *parent, BSTNode *left, BSTNode *right)
+{
+    BSTNode *node = NULL;
+    node = (BSTNode *)malloc(sizeof(BSTNode));
+    assert(node != NULL);
+
+    node->key = key;
+    node->left = left;
+    node->right = right;
+    node->parent = parent;
+
+    return node;
 }
 
 /* L'inserimento può essere realizzato in modo ricorsivo o
@@ -303,8 +336,26 @@ BSTNode *bst_search(const BST *T, BSTKey k)
 */
 static BSTNode *bst_insert_rec(BSTNode *n, BSTNode *p, BSTKey k, int *inserted)
 {
-    /* TODO */
-    return NULL; /* valore di ritorno fittizio per evitare warning del compilatore */
+    if (n == NULL)
+    {
+        /* crea nuovo nodo */
+        n = bst_node_create(k, p, NULL, NULL);
+        *inserted = 1;
+    }
+    else
+    {
+        *inserted = 0;
+        if (k < n->key)
+        {
+            n->left = bst_insert_rec(n->left, n, k, inserted);
+        }
+        else
+        {
+            n->right = bst_insert_rec(n->right, n, k, inserted);
+        }
+    }
+
+    return n;
 }
 
 int bst_insert(BST *T, BSTKey k)
