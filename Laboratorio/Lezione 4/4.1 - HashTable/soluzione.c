@@ -154,8 +154,7 @@ programmazione, come ad esempio Java.
 
 Per compilare:
 
-        gcc -std=c90 -Wall -Wpedantic hashtable.c hashtable-main.c -o
-hashtable-main
+        gcc -std=c90 -Wall -Wpedantic hashtable.c hashtable-main.c -o hashtable-main
 
 Per eseguire in ambiente Linux/MacOSX:
 
@@ -194,11 +193,11 @@ Per eseguire in ambiente Windows:
 
 ***/
 
-#include "hashtable.h"
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <string.h>
+#include "hashtable.h"
 
 unsigned long hash_function(const HashTable *table, unsigned long k)
 {
@@ -221,8 +220,7 @@ unsigned long encode(const char *key)
        overflow; non sono riuscito a trovare quale sia il
        comportamento atteso in ANSI C, ma per i fini di questo
        esercizio assumiamo che sia lo stesso. */
-    for (i = 0; key[i]; i++)
-    {
+    for (i=0; key[i]; i++) {
         s += key[i];
     }
     return s;
@@ -240,16 +238,15 @@ static int keys_equal(const char *k1, const char *k2)
 
 HashTable *ht_create(const int size)
 {
-    HashTable *h = (HashTable *)malloc(sizeof(*h));
+    HashTable *h = (HashTable*)malloc(sizeof(*h));
     int i;
 
     assert(h != NULL);
     h->size = size;
     h->values_count = 0;
-    h->items = (HashNode **)malloc(h->size * sizeof(*(h->items)));
+    h->items = (HashNode **) malloc(h->size * sizeof(*(h->items)));
     assert(h->items != NULL);
-    for (i = 0; i < h->size; i++)
-    {
+    for (i = 0; i < h->size; i++) {
         h->items[i] = NULL;
     }
     return h;
@@ -261,7 +258,7 @@ HashTable *ht_create(const int size)
    `next`. */
 static HashNode *hashtable_new_node(const char *key, int value, HashNode *next)
 {
-    HashNode *item = (HashNode *)malloc(sizeof(HashNode));
+    HashNode *item = (HashNode *) malloc(sizeof(HashNode));
     const int keylen = strlen(key);
 
     assert(item != NULL);
@@ -271,7 +268,7 @@ static HashNode *hashtable_new_node(const char *key, int value, HashNode *next)
        conseguenza, potrebbe non essere disponibile ovunque. Conviene
        quindi realizzare la copia manualmente, allocando un buffer di
        lunghezza opportuna e poi copiando `key` in tale buffer. */
-    item->key = (char *)malloc(keylen + 1);
+    item->key = (char*)malloc(keylen+1);
     assert(item->key != NULL);
     strcpy(item->key, key);
     item->next = next;
@@ -289,95 +286,72 @@ static void free_node(HashNode *n)
     free(n);
 }
 
-unsigned long key_to_index(HashTable *h, const char *key)
-{
-    return hash_function(h, encode(key));
-}
-
 int ht_insert(HashTable *h, const char *key, int value)
 {
-    unsigned long index;
-    HashNode *node;
+    HashNode *slot;
+
     assert(h != NULL);
 
-    node = ht_search(h, key, &index);
-    if (node == NULL)
-    {
-        node = hashtable_new_node(key, value, h->items[index]);
-        h->items[index] = node;
+    slot = ht_search(h, key);
+    if (slot != NULL) {
+        /* La chiave esiste gia': aggiorniamo il valore */
+        slot->value = value;
+        return 0;
+    } else {
+        /* La chiave non esiste: creiamo un nuovo nodo */
+        const unsigned long index = hash_function(h, encode(key));
+        h->items[index] = hashtable_new_node(key, value, h->items[index]);
         h->values_count++;
         return 1;
     }
-    else
-    {
-        node->value = value;
-        return 0;
-    }
 }
 
-HashNode *ht_search(HashTable *h, const char *key, unsigned long *out_index)
+HashNode *ht_search(HashTable *h, const char *key)
 {
     unsigned long index;
-    HashNode *head, *iter;
+    HashNode *item;
 
-    index = key_to_index(h, key);
-    if (out_index != NULL)
-    {
-        *out_index = index;
+    assert(h != NULL);
+
+    index = hash_function(h, encode(key));
+    item = h->items[index];
+
+    while ((item != NULL) && (!keys_equal(item->key, key))) {
+        item = item->next;
     }
-    head = h->items[index];
-
-    iter = head;
-    while (iter != NULL)
-    {
-        if (keys_equal(iter->key, key))
-        {
-            return iter;
-        }
-        iter = iter->next;
-    }
-
-    return NULL;
+    return item;
 }
 
 int ht_delete(HashTable *h, const char *key)
 {
     unsigned long index;
-    HashNode *head, *iter, *prev = NULL;
-    int found;
+    HashNode *prev = NULL, *curr;
 
-    index = key_to_index(h, key);
-    head = h->items[index];
-    iter = head;
-    found = 0;
-    while (iter != NULL && found == 0)
-    {
-        if (keys_equal(iter->key, key))
-        {
-            found = 1;
-        }
-        else
-        {
-            prev = iter;
-            iter = iter->next;
-        }
+    assert(h != NULL);
+
+    index = hash_function(h, encode(key));
+    curr = h->items[index];
+
+    while ((curr != NULL) && !keys_equal(curr->key, key)) {
+        prev = curr;
+        curr = curr->next;
     }
-    if (iter == NULL)
-    {
+
+    if (curr == NULL) {
+        /* not found */
         return 0;
+    } else {
+        if (prev == NULL) {
+            /* Primo elemento della lista */
+            h->items[index] = curr->next;
+        } else {
+            /* In mezzo alla lista */
+            prev->next = curr->next;
+        }
+        free_node(curr);
+        h->values_count--;
+        return 1;
     }
-    if (prev != NULL)
-    {
-        prev->next = iter->next;
-    }
-    else
-    {
-        h->items[index] = iter->next;
-    }
-    free_node(iter);
-    h->values_count--;
-
-    return 1;
 }
 
 void ht_clear(HashTable *h)
@@ -386,11 +360,9 @@ void ht_clear(HashTable *h)
 
     assert(h != NULL);
 
-    for (i = 0; i < h->size; i++)
-    {
+    for (i = 0; i < h->size; i++) {
         HashNode *current = h->items[i];
-        while (current != NULL)
-        {
+        while (current != NULL) {
             HashNode *next = current->next;
             free_node(current);
             current = next;
@@ -421,12 +393,10 @@ void ht_print(const HashTable *h)
 {
     int i;
     assert(h != NULL);
-    for (i = 0; i < h->size; i++)
-    {
-        const HashNode *iter;
+    for (i=0; i<h->size; i++) {
+        const HashNode* iter;
         printf("[%3d] ", i);
-        for (iter = h->items[i]; iter != NULL; iter = iter->next)
-        {
+        for (iter = h->items[i]; iter != NULL; iter = iter->next) {
             printf("->(%s, %d)", iter->key, iter->value);
         }
         printf("\n");

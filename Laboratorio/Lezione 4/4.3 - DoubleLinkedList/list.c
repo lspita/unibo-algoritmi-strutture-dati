@@ -27,22 +27,14 @@
 (Crediti: prof. [Violetta Lonati](http://lonati.di.unimi.it/),
 Università di Milano)
 
-> **Versione modificata rispetto a quanto originariamente mostrato in
-> laboratorio**: il nodo sentinella è ora un puntatore anziché una
-> struttura membro di `List` come in precedenza.  Questo consente di
-> evitare il cast che era necessario a eliminare il `const` nella
-> funzione `list_end()`. In generale, eliminare il `const` in modo
-> forzoso non è consigliabile e andrebbe evitato.
-
 ![Fonte: <https://www.youtube.com/watch?v=UqmnUe4pDdU>](treno.jpg)
 
 Implementare la struttura dati "lista doppiamente concatenata con
 sentinella", la cui interfaccia è specificata nel file
 [list.h](list.h). In una lista doppiamente concatenata, ogni nodo (che
-ha tipo `ListNode`) ha un puntatore al nodo precedente e al nodo
-successivo, oltre ad un attributo `val` che contiene il valore
-memorizzato in quel nodo. I valori sono di tipo `ListInfo`, che di
-default è impostato a `int`.
+ha tipo `ListNode`) contiene un attributo `val` di tipo `ListInfo`
+(che qui è un intero), e due puntatori `succ` e `pred` al nodo
+successivo e precedente, rispettivamente.
 
 ```C
 typedef int ListInfo;
@@ -51,41 +43,43 @@ typedef struct ListNode {
     ListInfo val;
     struct ListNode *succ, *pred;
 } ListNode;
+```
 
+La struttura `List` contiene un attributo `length` che indica la
+lunghezza della lista (escluso il nodo sentinella), e un puntatore
+`sentinel` al nodo sentinella.
+
+```C
 typedef struct {
     int length;
     ListNode *sentinel;
 } List;
 ```
 
-In una lista con sentinella è presente un nodo speciale, detto appunto
+In questo tipo di lista è infatti presente un nodo speciale, detto
 "sentinella", che non contiene alcuna informazione utile ma serve solo
 per marcare l'inizio (o la fine) della lista; di fatto la presenza
-della sentinella trasforma la lista in un anello chiuso. La sentinella
-consente di accedere in tempo $O(1)$ al primo o ultimo elemento della
-lista: il primo elemento è il successore della sentinella, mentre
-l'ultimo è il predecessore.
-
-Il tipo `List` è una struttura contenente un campo che indica la
-lunghezza della lista (esclusa la sentinella), e un puntatore alla
-sentinella (Figura 1).
+della sentinella trasforma la lista in un anello. La sentinella
+consente di accedere in tempo $O(1)$ al primo e ultimo nodo della
+lista: il primo è il successore della sentinella, mentre l'ultimo è il
+predecessore (Figura 1).
 
 ![Figura 1: Lista doppiamente concatenata con sentinella](list.svg)
 
-Nel caso di lista vuota, c'è comunque il nodo sentinella,
-il cui successore e predecessore è il nodo stesso (Figura 2).
+Nel caso di lista vuota, è comunque presente il nodo sentinella, il
+cui successore e predecessore è se stesso (Figura 2).
 
 ![Figura 2: Lista vuota con sentinella](empty-list.svg)
 
 Oltre a consentire accesso in tempo costante agli estremi della lista,
 la sentinella semplifica le operazioni di inserimento e cancellazione,
-perché grazie ad essa ogni nodo ha sempre un predecessore e un
-successore.  Non occorre quindi gestire in modo speciale la lista
+perché garantisce che ogni nodo abbia sempre un predecessore e un
+successore. Non occorre quindi gestire in modo speciale la lista
 vuota o le operazioni che coinvolgono il primo o l'ultimo elemento.
 
 Nel file [list.h](list.h) vengono descritte le funzioni
-dell'interfaccia del tipo di dato `List`. L'unico punto di attenzione
-è l'iterazione. Come esempio consideriamo la funzione `list_print(L)`
+dell'interfaccia del tipo `List`. L'unico punto di attenzione è
+l'iterazione. Come esempio consideriamo la funzione `list_print(L)`
 che stampa il contenuto di `L`. La funzione si può realizzare mediante
 un ciclo `while`
 
@@ -114,14 +108,16 @@ void list_print(List *L)
 }
 ```
 
-Si noti che `list_end()` _non restituisce un puntatore all'ultimo nodo
-della lista, ma alla sentinella_; questo è conforme al comportamento
-di analoghe strutture dati in linguaggi come Java o C++;
+`list_first(L)` restituisce un puntatore al primo nodo di _L_, oppure
+alla sentinella se la lista è vuota; `list_succ(node)` restituisce un
+puntatore al successore di `node`, mentre `list_end()` restituisce un
+puntatore alla sentinella. Questa interfaccia è conforme a strutture
+dati analoghe di linguaggi come Java o C++;
 
-Il file [list-main.c](list-main.c) contiene un `main()` che legge ed
-esegue una sequenza di comandi da un file il cui nome va specificato
-sulla riga di comando. L'elenco dei comandi con il relativo
-significato è riportato nella Tabella 1.
+Il file [list-main.c](list-main.c) contiene un programma che esegue
+una sequenza di comandi da un file il cui nome va specificato sulla
+riga di comando. L'elenco dei comandi con il relativo significato è
+riportato nella Tabella 1.
 
 : Tabella 1: Comandi nel file di input
 
@@ -152,10 +148,10 @@ Operazione    Significato
 -------------------------------------------------------------------------
 
 È possibile inserire più volte lo stesso valore; in caso di
-cancellazione di un valore ripetuto, sarà sufficiente cancellarne una
+cancellazione di un valore ripetuto, è sufficiente cancellarne una
 occorrenza qualsiasi.
 
-Un esempio di file di input è [list.in](list.in). Per compilare:
+Per compilare:
 
         gcc -std=c90 -Wall -Wpedantic list.c list-main.c -o list-main
 
@@ -176,7 +172,7 @@ espresse facilmente sfruttando una funzione ausiliaria (da definire)
 
         static void list_insert_after(List *L, ListNode *n, ListInfo k)
 
-che crea un nuovo nodo contenente l'informazione `k` e lo inserisce
+che crea un nuovo nodo contenente il valore `k`, e lo inserisce
 immediatamente dopo il nodo `n` della lista `L`.
 
 ## File
@@ -236,11 +232,32 @@ int list_length(const List *L)
     return L->length;
 }
 
+/* Concatena due nodi `pred` e `succ`: `succ` diventa il successore di
+   `pred`. */
+static void list_join(ListNode *pred, ListNode *succ)
+{
+    assert(pred != NULL);
+    assert(succ != NULL);
+
+    pred->succ = succ;
+    succ->pred = pred;
+}
 
 
 void list_clear(List *L)
 {
-    /* [TODO] */
+    ListNode *node;
+
+    assert(L != NULL);
+
+    node = list_first(L);
+    while (node != list_end(L)) {
+        ListNode *succ = list_succ(node);
+        free(node);
+        node = succ;
+    }
+    L->length = 0;
+    L->sentinel->pred = L->sentinel->succ = L->sentinel;
 }
 
 void list_destroy(List *L)
@@ -273,8 +290,14 @@ int list_is_empty(const List *L)
 
 ListNode *list_search(const List *L, ListInfo k)
 {
-    /* [TODO] */
-    return NULL; /* Sostituire con il valore di ritorno corretto */
+    ListNode *node;
+    assert(L != NULL);
+
+    node = list_first(L);
+    while ((node != list_end(L)) && (node->val != k)) {
+        node = list_succ(node);
+    }
+    return node;
 }
 
 ListNode *list_first(const List *L)
@@ -291,19 +314,33 @@ ListNode *list_last(const List *L)
     return L->sentinel->pred;
 }
 
+/* Crea un nuovo nodo contenente k, e lo inserisce immediatamente dopo
+   il nodo n di L */
+static void list_insert_after(List *L, ListNode *n, ListInfo k)
+{
+    ListNode *new_node, *succ_of_n;
+    assert(L != NULL);
+    assert(n != NULL);
+
+    new_node = list_new_node(k);
+    succ_of_n = list_succ(n);
+    list_join(n, new_node);
+    list_join(new_node, succ_of_n);
+    L->length++;
+}
 
 /* Inserisce un nuovo nodo contenente k all'inizio della lista */
 void list_add_first(List *L, ListInfo k)
 {
     assert(L != NULL);
-    /* [TODO] */
+    list_insert_after(L, L->sentinel, k);
 }
 
 /* Inserisce un nuovo nodo contenente k alla fine della lista */
 void list_add_last(List *L, ListInfo k)
 {
     assert(L != NULL);
-    /* [TODO] */
+    list_insert_after(L, L->sentinel->pred, k);
 }
 
 /* Rimuove il nodo n dalla lista L */
@@ -312,19 +349,35 @@ void list_remove(List *L, ListNode *n)
     assert(L != NULL);
     assert(n != NULL);
     assert(n != list_end(L));
-    /* [TODO] */
+    list_join(list_pred(n), list_succ(n));
+    free(n);
+    L->length--;
 }
 
 ListInfo list_remove_first(List *L)
 {
-    /* [TODO] */
-    return -1; /* Sostituire con il valore di ritorno corretto */
+    ListNode *first;
+    ListInfo result;
+
+    assert( !list_is_empty(L) );
+
+    first = list_first(L);
+    result = first->val;
+    list_remove(L, first);
+    return result;
 }
 
 ListInfo list_remove_last(List *L)
 {
-    /* [TODO] */
-    return -1; /* Sostituire con il valore di ritorno corretto */
+    ListNode *last;
+    ListInfo result;
+
+    assert( !list_is_empty(L) );
+
+    last = list_last(L);
+    result = last->val;
+    list_remove(L, last);
+    return result;
 }
 
 ListNode *list_succ(const ListNode *n)
@@ -343,23 +396,85 @@ ListNode *list_pred(const ListNode *n)
 
 ListNode *list_nth_element(const List *L, int n)
 {
-    /* [TODO] */
-    return NULL; /* Sostituire con il valore di ritorno corretto */
+    int i;
+    ListNode *node;
+
+    assert(L != NULL);
+
+    node = list_first(L);
+    for (i=0; (i < n) && (node != list_end(L)); i++) {
+        node = list_succ(node);
+    }
+    return node;
 }
 
 void list_concat(List *L1, List *L2)
 {
+    ListNode *last_of_L1, *first_of_L2, *last_of_L2;
+
     assert(L1 != NULL);
     assert(L2 != NULL);
 
-    /* [TODO] */
+    last_of_L1 = list_last(L1);
+    first_of_L2 = list_first(L2);
+    last_of_L2 = list_last(L2);
+
+    list_join(last_of_L1, first_of_L2);
+    list_join(last_of_L2, L1->sentinel);
+    L1->length += L2->length;
+    L2->length = 0;
+    L2->sentinel->pred = L2->sentinel->succ = L2->sentinel;
 }
 
 int list_equal(const List *L1, const List *L2)
 {
+    const ListNode *n1, *n2;
+
     assert(L1 != NULL);
     assert(L2 != NULL);
 
-    /* [TODO] */
-    return -1; /* Sostituire con il valore di ritorno corretto */
+    n1 = list_first(L1);
+    n2 = list_first(L2);
+    while ( (n1 != list_end(L1)) &&
+            (n2 != list_end(L2)) &&
+            (n1->val == n2->val) ) {
+        n1 = list_succ(n1);
+        n2 = list_succ(n2);
+    }
+    /* Se siamo usciti dal ciclo significa che una delle seguenti
+       condizioni si è verificata:
+
+       1) abbiamo raggiunto la fine di L1;
+
+       2) abbiamo raggiunto la fine di L2;
+
+       3) abbiamo trovato una coppia di valori che differiscono.
+
+       L'unico caso in cui possiamo affermare che le due liste sono
+       uguali è se abbiamo raggiunto la fine di entrambe, cioè se
+       risultano vere 1) e 2); in tutti gli altri casi le liste non
+       sono uguali. A parte il caso 3) che è ovvio, se abbiamo
+       raggiunto la fine di una lista ma non dell'altra significa che
+       le liste hanno lunghezza diversa, quindi non possono essere
+       uguali.
+
+       Sarebbe stata accettabile anche la soluzione più diretta:
+
+       while ( (n1 != list_end(L1)) && (n2 != list_end(L2)) ) {
+         if (n1->val != n2->val) ) {
+           return 0;
+         }
+         n1 = list_succ(n1);
+         n2 = list_succ(n2);
+       }
+       return ((n1 == list_end(L1)) && (n2 == list_end(L2)));
+
+       che tuttavia presenta due "return" distinti, il primo dei quali
+       forza l'uscita dal ciclo "while" violando il requisito della
+       programmazione strutturata che richiede che ogni blocco abbia
+       un singolo punto di ingresso e un singolo punto di uscita. Tale
+       requisito non va comunque considerato un dogma assoluto, e in
+       certi casi può essere violato.
+    */
+    return ((n1 == list_end(L1)) && (n2 == list_end(L2)));
 }
