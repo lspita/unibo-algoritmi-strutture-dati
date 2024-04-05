@@ -264,12 +264,7 @@ void bst_destroy(BST *T)
 
 static BSTNode *bst_search_rec(BSTNode *n, BSTKey k)
 {
-    if (n == NULL)
-    {
-        return NULL;
-    }
-
-    if (n->key == k)
+    if (n == NULL || n->key == k)
     {
         return n;
     }
