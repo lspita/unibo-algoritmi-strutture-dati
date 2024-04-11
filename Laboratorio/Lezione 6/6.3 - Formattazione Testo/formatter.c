@@ -157,74 +157,93 @@ spazi e tratta gli "a capo" nell'input come "a capo" nell'output.
    non è stata letta alcuna parola. */
 int read_word(FILE *f, char *s)
 {
-  int i = 0;
-  int c;
+    int i = 0;
+    int c;
 
-  /* Salta gli eventuali spazi */
-  do
-  {
-    c = fgetc(f);
-  } while (c != EOF && isspace(c));
-  /* Leggi la parola */
-  while (c != EOF && !isspace(c))
-  {
-    assert(i < WORDLEN - 1);
-    s[i] = c;
-    i++;
-    c = fgetc(f);
-  }
-  s[i] = '\0';
-  return i;
+    /* Salta gli eventuali spazi */
+    do
+    {
+        c = fgetc(f);
+    } while (c != EOF && isspace(c));
+    /* Leggi la parola */
+    while (c != EOF && !isspace(c))
+    {
+        assert(i < WORDLEN - 1);
+        s[i] = c;
+        i++;
+        c = fgetc(f);
+    }
+    s[i] = '\0';
+    return i;
 }
 
 /* Stampa una riga di intestazione di lunghezza `n` */
 void header(int n)
 {
-  int i;
+    int i;
 
-  for (i = 1; i <= n; i++)
-  {
-    printf("%c", i % 10 ? '-' : '|');
-  }
-  printf("\n");
+    for (i = 1; i <= n; i++)
+    {
+        printf("%c", i % 10 ? '-' : '|');
+    }
+    printf("\n");
 }
 
 int main(int argc, char *argv[])
 {
-  FILE *filein = stdin;
-  int Lmax;
-  char w[WORDLEN];
-  if (argc != 3)
-  {
-    fprintf(stderr, "Uso: %s Lmax filename\n", argv[0]);
-    return EXIT_FAILURE;
-  }
+    FILE *filein = stdin;
+    int Lmax;
+    char w[WORDLEN];
 
-  Lmax = atoi(argv[1]);
+    int count, linesum;
+    char newline;
 
-  if (strcmp(argv[2], "-") != 0)
-  {
-    filein = fopen(argv[2], "r");
-    if (filein == NULL)
+    if (argc != 3)
     {
-      fprintf(stderr, "Can not open %s\n", argv[1]);
-      return EXIT_FAILURE;
+        fprintf(stderr, "Uso: %s Lmax filename\n", argv[0]);
+        return EXIT_FAILURE;
     }
-  }
 
-  header(Lmax);
-  /* [TODO]: il blocco seguente legge e stampa le "parole" dal file,
-     una per riga. Si tratta solo di un esempio di uso della
-     funzione `read_word()`, e andrà modificato (o riscritto) per
-     risolvere il problema. */
+    Lmax = atoi(argv[1]);
 
-  while (read_word(filein, w) > 0)
-  {
-    printf("%s\n", w);
-  }
-  printf("\n");
-  if (filein != stdin)
-    fclose(filein);
+    if (strcmp(argv[2], "-") != 0)
+    {
+        filein = fopen(argv[2], "r");
+        if (filein == NULL)
+        {
+            fprintf(stderr, "Can not open %s\n", argv[2]);
+            return EXIT_FAILURE;
+        }
+    }
 
-  return EXIT_SUCCESS;
+    header(Lmax);
+    /* [TODO]: il blocco seguente legge e stampa le "parole" dal file,
+       una per riga. Si tratta solo di un esempio di uso della
+       funzione `read_word()`, e andrà modificato (o riscritto) per
+       risolvere il problema. */
+
+    linesum = 0;
+    count = read_word(filein, w);
+    while (count > 0)
+    {
+        linesum += count + 1; /* lunghezza parola + spazio */
+        if (linesum >= Lmax)
+        {
+            newline = '\n';
+            linesum = 0;
+        }
+        else
+        {
+            newline = '\0';
+        }
+
+        printf("%s %c", w, newline);
+
+        count = read_word(filein, w);
+    }
+    printf("\n");
+    if (filein != stdin)
+        fclose(filein);
+
+    return EXIT_SUCCESS;
 }
