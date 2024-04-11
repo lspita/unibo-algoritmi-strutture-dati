@@ -225,6 +225,13 @@ Per esguire in ambiente Windows:
 #include <string.h>
 #include <assert.h>
 
+int compare_descending(const void *a, const void *b)
+{
+    int a_n = *((int *)a), b_n = *((int *)b);
+
+    return -(a_n - b_n);
+}
+
 /* Date n monete i cui valori sono memorizzati nell'array m[] (non
    necessariamente ordinato), restituisce il minimo numero di pezzi
    necessari per erogare un resto R. Se il resto non è erogabile
@@ -233,8 +240,41 @@ Per esguire in ambiente Windows:
    avvisa che il resto non è erogabile. */
 int resto(int R, int m[], int n)
 {
-    /* [TODO] */
-    return -1; /* Valore di ritorno fittizio per evitare warning del compilatore */
+    int i, count;
+    int *selected;
+    qsort(m, n, sizeof(int), compare_descending);
+
+    selected = (int *)calloc(n, sizeof(int));
+
+    count = 0;
+    for (i = 0; i < n; i++)
+    {
+        if (R >= m[i])
+        {
+            selected[count] = m[i];
+            count++;
+            R -= m[i];
+        }
+    }
+
+    printf("Resto %d ", R);
+    if (R > 0)
+    {
+        printf("non erogabile con le monete a disposizione");
+        count = -1;
+    }
+    else
+    {
+        printf("erogabile con %d monete:\n", count);
+        for (i = 0; i < count; i++)
+        {
+            printf("%d ", selected[i]);
+        }
+    }
+    free(selected);
+
+    putchar('\n');
+    return count;
 }
 
 int main(int argc, char *argv[])
