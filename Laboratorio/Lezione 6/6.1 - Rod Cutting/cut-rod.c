@@ -128,14 +128,41 @@ void init(FILE *filein)
    guadagno massimo */
 double solve(void)
 {
-    /* [TODO] */
-    return 0.0;
+    int j, i;
+    int q;
+    r[0] = 0.0;
+    for (j = 1; j <= n; j++)
+    {
+        q = -1;
+        for (i = 1; i <= j; i++)
+        {
+            if (q < p[i] + r[j - i])
+            {
+                q = p[i] + r[j - i];
+                s[j] = i;
+            }
+        }
+        r[j] = q;
+    }
+
+    return r[n];
 }
 
 /* Stampa la soluzione del problema. */
 void print(void)
 {
-    /* [TODO] */
+    int i = n;
+
+    printf("   Lun   Prezzo\n");
+    printf("------ --------\n");
+
+    while (i > 0)
+    {
+        printf("     %d     %.2f\n", s[i], p[s[i]]);
+        i = i - s[i];
+    }
+
+    printf("Guadagno complessivo: %.2f\n", r[n]);
 }
 
 int main(int argc, char *argv[])
