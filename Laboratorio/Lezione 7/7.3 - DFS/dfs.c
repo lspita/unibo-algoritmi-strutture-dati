@@ -108,13 +108,56 @@ int *finish;   /* `finish[v]` è l'istante di tempo in cui tutti i
 Color *color;  /* `color[v]` è il colore del nodo `v` (vedi libro di
                   testo) */
 
+void dfs_visit(int u)
+{
+    Edge *a;
+    int v;
+
+    t++;
+    discover[u] = t;
+    color[u] = GREY;
+
+    a = G->edges[u];
+    while (a != NULL)
+    {
+        v = a->dst;
+
+        if (color[v] == WHITE)
+        {
+            p[v] = u;
+            dfs_visit(v);
+        }
+
+        a = a->next;
+    }
+
+    color[u] = BLACK;
+    t++;
+    finish[u] = t;
+}
+
 /* Visita il grafo `G` (definito nell'omonima variabile globale)
    usando l'algoritmo di visita in profondità (DFS) partendo da tutti
    i nodi. Non viene passato un nodo sorgente, perché questa versione
    di DFS deve visitare l'intero grafo. */
 void dfs(void)
 {
-    /* [TODO] */
+    int i;
+
+    for (i = 0; i < G->n; i++)
+    {
+        color[i] = WHITE;
+        p[i] = NODE_UNDEF;
+    }
+
+    t = 0;
+    for (i = 0; i < G->n; i++)
+    {
+        if (color[i] == WHITE)
+        {
+            dfs_visit(i);
+        }
+    }
 }
 
 /* Stampa i predecessori di ciascun nodo lungo l'albero di visita;
