@@ -160,13 +160,11 @@ int bfs(const Graph *g,
 
     for (i = 0; i < g->n; i++)
     {
-        if (i != s)
-        {
-            d[i] = NODE_UNDEF;
-            p[i] = NODE_UNDEF;
-        }
+        c[i] = WHITE;
+        d[i] = -1;
+        p[i] = NODE_UNDEF;
     }
-    c[s] = GREY, d[s] = 0, p[s] = NODE_UNDEF;
+    c[s] = GREY, d[s] = 0;
 
     Q = list_create();
     list_add_last(Q, s);
