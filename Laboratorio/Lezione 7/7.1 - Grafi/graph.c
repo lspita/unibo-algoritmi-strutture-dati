@@ -202,6 +202,42 @@ Graph_type graph_type(const Graph *g)
     return g->t;
 }
 
+static Edge *new_edge(int src, int dst, double weight)
+{
+    Edge *e;
+    e = (Edge *)malloc(sizeof(Edge));
+    assert(e != NULL);
+
+    e->src = src;
+    e->dst = dst;
+    e->weight = weight;
+    e->next = NULL;
+
+    return e;
+}
+
+// inserimento in testa
+static void edge_list_insert(Edge *e, Edge **list)
+{
+    assert(e != NULL);
+    assert(list != NULL);
+
+    e->next = *list;
+    *list = e;
+}
+
+static void add_edge(Graph *g, int src, int dst, double weight)
+{
+    Edge *e;
+
+    e = new_edge(src, dst, weight);
+    edge_list_insert(e, &(g->edges[src]));
+    g->out_deg[src]++;
+    g->in_deg[dst]++;
+
+    g->m++;
+}
+
 void graph_add_edge(Graph *g, int src, int dst, double weight)
 {
     assert((src >= 0) && (src < graph_n_nodes(g)));
@@ -245,7 +281,11 @@ void graph_add_edge(Graph *g, int src, int dst, double weight)
        peggiora il costo asintotico dell'inserimento, che non è più O(1)
        ma diventa proporzionale al grado uscente di `src`. */
 
-    /* [TODO] */
+    add_edge(g, src, dst, weight);
+    if (g->t == GRAPH_UNDIRECTED)
+    {
+        add_edge(g, dst, src, weight);
+    }
 }
 
 /* Funzione ricorsiva ausiliaria che rimuove l'arco che porta al nodo
