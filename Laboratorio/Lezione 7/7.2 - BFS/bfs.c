@@ -148,8 +148,51 @@ int bfs(const Graph *g,
                    lunghezza `n`. */
 )
 {
-    /* [TODO] */
-    return 0;
+    int n_reachable;
+    int i, v, u;
+    List *Q;
+    Color *c;
+    Edge *a;
+
+    n_reachable = 0;
+    c = (Color *)calloc(g->n, sizeof(Color)); /* c[i] = colore nodo i */
+    assert(c != NULL);
+
+    for (i = 0; i < g->n; i++)
+    {
+        if (i != s)
+        {
+            d[i] = NODE_UNDEF;
+            p[i] = NODE_UNDEF;
+        }
+    }
+    c[s] = GREY, d[s] = 0, p[s] = NODE_UNDEF;
+
+    Q = list_create();
+    list_add_last(Q, s);
+    while (!list_is_empty(Q))
+    {
+        u = list_remove_first(Q);
+        a = g->edges[u];
+        while (a != NULL)
+        {
+            v = a->dst;
+            if (c[v] == WHITE)
+            {
+                c[v] = GREY;
+                d[v] = d[u] + 1;
+                p[v] = u;
+
+                list_add_last(Q, v);
+            }
+            a = a->next;
+        }
+
+        c[u] = BLACK;
+        n_reachable++;
+    }
+
+    return n_reachable;
 }
 
 /* Stampa il cammino che da `s` a `d` prodotto dalla visita in
