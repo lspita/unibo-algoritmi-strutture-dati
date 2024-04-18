@@ -282,7 +282,7 @@ void graph_add_edge(Graph *g, int src, int dst, double weight)
        ma diventa proporzionale al grado uscente di `src`. */
 
     add_edge(g, src, dst, weight);
-    if (g->t == GRAPH_UNDIRECTED)
+    if (graph_type(g) == GRAPH_UNDIRECTED)
     {
         add_edge(g, dst, src, weight);
     }
