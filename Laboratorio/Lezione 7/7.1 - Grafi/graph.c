@@ -216,7 +216,7 @@ static Edge *new_edge(int src, int dst, double weight)
     return e;
 }
 
-// inserimento in testa
+/* inserimento in testa */
 static void edge_list_insert(Edge *e, Edge **list)
 {
     assert(e != NULL);
