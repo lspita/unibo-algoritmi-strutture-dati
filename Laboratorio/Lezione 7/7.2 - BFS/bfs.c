@@ -192,6 +192,7 @@ int bfs(const Graph *g,
         n_reachable++;
     }
 
+    free(c);
     return n_reachable;
 }
 
