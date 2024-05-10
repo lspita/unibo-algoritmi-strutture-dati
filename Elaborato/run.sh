@@ -1,10 +1,9 @@
 #!/bin/bash
 
-SRC_PATH="src/"
 TESTS_PATH="test/"
 
 MAINFILE="0001114169"
-COMPILE="gcc -std=c90 -Wall -Wpedantic ${SRC_PATH}/${MAINFILE}.c -o ${MAINFILE}"
+COMPILE="gcc -std=c90 -Wall -Wpedantic ${MAINFILE}.c -o ${MAINFILE}"
 
 TEST_START=$1
 TEST_END=$2
