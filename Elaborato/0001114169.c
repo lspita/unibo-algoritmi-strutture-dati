@@ -521,49 +521,6 @@ void print_output()
 {
 }
 
-void test()
-{
-    MinHeap *heap;
-    Node *n;
-    int i;
-
-    heap = new_minheap();
-
-    n = new_node(0, 0, 0);
-    heap_insert(heap, n, 5);
-    n = new_node(1, 1, 1);
-    heap_insert(heap, n, 1);
-    n = new_node(2, 2, 2);
-    heap_insert(heap, n, 20);
-    n = new_node(3, 3, 3);
-    heap_insert(heap, n, 12);
-    n = new_node(4, 4, 4);
-    heap_insert(heap, n, 3);
-    n = new_node(4, 4, 4);
-    heap_insert(heap, n, 36);
-    n = new_node(4, 4, 4);
-    heap_insert(heap, n, 0);
-    n = new_node(4, 4, 4);
-    heap_insert(heap, n, 4);
-
-    printf("\nn: %d\n\n", heap->n);
-
-    while (heap_empty(heap) == 0)
-    {
-        n = heap_extract(heap);
-        printf("(%d: %d) || ", n->h_index, n->effort);
-        for (i = 0; i < heap->n; i++)
-        {
-            printf("(%d: %d), ", heap->data[i]->h_index, heap->data[i]->effort);
-        }
-        putchar('\n');
-    }
-
-    printf("\nn: %d\n", heap->n);
-
-    exit(0);
-}
-
 int main(int argc, char *argv[])
 {
     char *filename = "test/test0.in";
@@ -582,8 +539,6 @@ int main(int argc, char *argv[])
     }
     filename = argv[1];
     */
-
-    test();
 
     filein = fopen(filename, "r");
     if (filein == NULL)
