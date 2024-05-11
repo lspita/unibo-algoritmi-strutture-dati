@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <string.h>
 #include <limits.h>
 
 #define MIN_DIMENSION 5   /* minimum size of a matrix dimension */
@@ -95,10 +94,13 @@ int matrix_in_bounds(const int i, const int j, const int n, const int m)
 }
 
 /*
-Sum x >= y >= 0 without overflowing (prevent errors with INT_MAX)
+Sum x,y without overflowing (prevent errors with INT_MAX)
 */
 int bounded_positive_sum(const int x, const int y)
 {
+    /*
+    Check if x + y >= INT_MAX but without doing the sum (prevent overflow)
+     */
     if (x >= INT_MAX - y)
     {
         return INT_MAX;
@@ -265,6 +267,80 @@ Graph *new_graph(const int n, const int m)
         for (j = 0; j < m; j++)
         {
             graph->adj[i][j] = new_adjacency_list();
+        }
+    }
+
+    return graph;
+}
+
+/* MATRIX */
+
+/*
+Read the file and extract the input values
+
+Returns: pointer to the H matrix
+Output params:
+- C_cell: cell movement weight ant
+- C_height: cell height difference weight ant
+- n: rows of H
+- m: columns of H
+*/
+int **parse_file(FILE *filein,
+                 int *const C_cell,
+                 int *const C_height,
+                 int *const n,
+                 int *const m)
+{
+    int **H;
+    int i, j;
+
+    /* read parameters */
+    fscanf(filein, "%d", C_cell);
+    fscanf(filein, "%d", C_height);
+    fscanf(filein, "%d", n);
+    fscanf(filein, "%d", m);
+
+    /* read matrix */
+    H = (int **)safe_malloc(*n, sizeof(int *));
+    for (i = 0; i < *n; i++)
+    {
+        H[i] = (int *)safe_malloc(*m, sizeof(int));
+        for (j = 0; j < *m; j++)
+        {
+            fscanf(filein, "%d", &(H[i][j]));
+        }
+    }
+
+    return H;
+}
+
+/*
+Convert the H matrix to a graph
+*/
+Graph *matrix_to_graph(int **H,
+                       const int n,
+                       const int m)
+{
+    int i, j;
+    Graph *graph;
+
+    graph = new_graph(n, m);
+
+    /* add nodes */
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < m; j++)
+        {
+            graph->nodes[i][j] = new_node(i, j, H[i][j]);
+        }
+    }
+
+    /* add edges */
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < m; j++)
+        {
+            connect_adjacents(graph, graph->nodes[i][j]);
         }
     }
 
@@ -542,6 +618,8 @@ void dijkstra(Graph *const graph, Node *const src)
     }
 }
 
+/* PATH */
+
 /*
 Create new empty nodes path with initial effort
 */
@@ -585,80 +663,6 @@ Path *extract_path(Node *const dst, const int C_cell, const int C_height)
     return path;
 }
 
-/* MAIN PROGRAM */
-
-/*
-Read the file and extract the input values
-
-Returns: pointer to the H matrix
-Output params:
-- C_cell: cell movement weight ant
-- C_height: cell height difference weight ant
-- n: rows of H
-- m: columns of H
-*/
-int **parse_file(FILE *filein,
-                 int *const C_cell,
-                 int *const C_height,
-                 int *const n,
-                 int *const m)
-{
-    int **H;
-    int i, j;
-
-    /* read parameters */
-    fscanf(filein, "%d", C_cell);
-    fscanf(filein, "%d", C_height);
-    fscanf(filein, "%d", n);
-    fscanf(filein, "%d", m);
-
-    /* read matrix */
-    H = (int **)safe_malloc(*n, sizeof(int *));
-    for (i = 0; i < *n; i++)
-    {
-        H[i] = (int *)safe_malloc(*m, sizeof(int));
-        for (j = 0; j < *m; j++)
-        {
-            fscanf(filein, "%d", &(H[i][j]));
-        }
-    }
-
-    return H;
-}
-
-/*
-Convert the H matrix to a graph
-*/
-Graph *matrix_to_graph(int **H,
-                       const int n,
-                       const int m)
-{
-    int i, j;
-    Graph *graph;
-
-    graph = new_graph(n, m);
-
-    /* add nodes */
-    for (i = 0; i < n; i++)
-    {
-        for (j = 0; j < m; j++)
-        {
-            graph->nodes[i][j] = new_node(i, j, H[i][j]);
-        }
-    }
-
-    /* add edges */
-    for (i = 0; i < n; i++)
-    {
-        for (j = 0; j < m; j++)
-        {
-            connect_adjacents(graph, graph->nodes[i][j]);
-        }
-    }
-
-    return graph;
-}
-
 /*
 Print x y values divided by space and with a new line after
 */
@@ -667,7 +671,7 @@ void print_coordinates(const int row, const int col)
     printf("%d %d\n", row, col);
 }
 
-void print_output(Path *const path)
+void print_path(Path *const path)
 {
     path->n = path->head;
     while (path->n != NULL)
@@ -681,6 +685,35 @@ void print_output(Path *const path)
     printf("%d\n", path->effort);
 }
 
+/* DEBUG */
+
+void print_graph(Graph *g)
+{
+    int i, j;
+    AdjacencyList *adj;
+    Node *n;
+
+    printf("GRAPH (%d, %d)\n----------------------\n", g->n, g->m);
+
+    for (i = 0; i < g->n; i++)
+    {
+        for (j = 0; j < g->m; j++)
+        {
+            n = g->nodes[i][j];
+            printf("(%d,%d: %d)->", n->row, n->col, n->val);
+            adj = g->adj[i][j];
+            adj->e = adj->head;
+            while (adj->e != NULL)
+            {
+                printf(" (%d,%d: %d)", adj->e->dst->row, adj->e->dst->col, adj->e->weight);
+
+                adj->e = adj->e->next;
+            }
+            putchar('\n');
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     char *filename;
@@ -692,14 +725,15 @@ int main(int argc, char *argv[])
     Path *path;
 
     /* get file name from command arguments */
+    /*
     if (argc != 2)
     {
         fprintf(stderr, "Invocare il programma con: %s input_file\n", argv[0]);
         return EXIT_FAILURE;
     }
     filename = argv[1];
-
-    /* filename = "test/test1.in"; */
+    */
+    filename = "test/test3.in";
 
     filein = fopen(filename, "r");
     if (filein == NULL)
@@ -717,6 +751,7 @@ int main(int argc, char *argv[])
 
     /* convert the H matrix to a graph */
     graph = matrix_to_graph(H, n, m);
+    /* print_graph(graph); */
 
     /* find lightest path */
     start = graph->nodes[0][0];
@@ -725,7 +760,7 @@ int main(int argc, char *argv[])
     path = extract_path(end, C_cell, C_height);
 
     /* print the path found */
-    print_output(path);
+    /* print_path(path); */
 
     return EXIT_SUCCESS;
 }
