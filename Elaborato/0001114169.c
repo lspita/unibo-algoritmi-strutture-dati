@@ -502,11 +502,11 @@ Insert node in the heap with the specified effort value
 */
 void heap_insert(MinHeap *const heap, Node *const node)
 {
-    int i;
+    int last;
 
-    i = heap->n;
+    last = heap->n;
     heap_extend(heap);
-    heap_set_node(heap, i, node);
+    heap_set_node(heap, last, node);
 
     heap_decrease(heap, node->h_index, node->effort);
 }
@@ -517,20 +517,20 @@ Extract root of heap
 Node *heap_extract(MinHeap *const heap)
 {
     Node *min;
-    int i;
+    int last;
 
     min = heap_min(heap);
     if (min == NULL)
     {
         return NULL;
     }
-    min->h_index = -1;
 
-    i = heap->n - 1;
-    heap_swap(heap, 0, i);
+    last = heap->n - 1;
+    heap_set_node(heap, 0, heap->data[last]);
     heap->n--;
     min_heapify(heap, 0);
 
+    min->h_index = -1;
     return min;
 }
 
@@ -671,6 +671,9 @@ void print_coordinates(const int row, const int col)
     printf("%d %d\n", row, col);
 }
 
+/*
+Print path nodes and effort
+*/
 void print_path(Path *const path)
 {
     path->n = path->head;
@@ -685,34 +688,7 @@ void print_path(Path *const path)
     printf("%d\n", path->effort);
 }
 
-/* DEBUG */
-
-void print_graph(Graph *g)
-{
-    int i, j;
-    AdjacencyList *adj;
-    Node *n;
-
-    printf("GRAPH (%d, %d)\n----------------------\n", g->n, g->m);
-
-    for (i = 0; i < g->n; i++)
-    {
-        for (j = 0; j < g->m; j++)
-        {
-            n = g->nodes[i][j];
-            printf("(%d,%d: %d)->", n->row, n->col, n->val);
-            adj = g->adj[i][j];
-            adj->e = adj->head;
-            while (adj->e != NULL)
-            {
-                printf(" (%d,%d: %d)", adj->e->dst->row, adj->e->dst->col, adj->e->weight);
-
-                adj->e = adj->e->next;
-            }
-            putchar('\n');
-        }
-    }
-}
+/* MAIN */
 
 int main(int argc, char *argv[])
 {
@@ -725,15 +701,14 @@ int main(int argc, char *argv[])
     Path *path;
 
     /* get file name from command arguments */
-    /*
     if (argc != 2)
     {
         fprintf(stderr, "Invocare il programma con: %s input_file\n", argv[0]);
         return EXIT_FAILURE;
     }
     filename = argv[1];
-    */
-    filename = "test/test3.in";
+
+    /* filename = "test/test3.in"; */ /* DEBUG */
 
     filein = fopen(filename, "r");
     if (filein == NULL)
@@ -751,7 +726,6 @@ int main(int argc, char *argv[])
 
     /* convert the H matrix to a graph */
     graph = matrix_to_graph(H, n, m);
-    /* print_graph(graph); */
 
     /* find lightest path */
     start = graph->nodes[0][0];
@@ -760,7 +734,7 @@ int main(int argc, char *argv[])
     path = extract_path(end, C_cell, C_height);
 
     /* print the path found */
-    /* print_path(path); */
+    print_path(path);
 
     return EXIT_SUCCESS;
 }
