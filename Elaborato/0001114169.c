@@ -8,7 +8,7 @@
 #define MAX_DIMENSION 250 /* maximum size of a matrix dimension */
 #define END_OUTPUT_VAL -1 /* value of x,y coordinates of last node in output */
 
-#define REALLOC_JUMP 10 /* number of cell to add every time extending a dynamic vector */
+#define REALLOC_JUMP 5 /* number of cell to add every time extending a dynamic vector */
 
 /* STRUCTS */
 
@@ -21,10 +21,12 @@ typedef struct Node
     int col; /* x position in matrix */
     int val; /* height value */
 
-    unsigned int effort; /* cost of path to this node */
-    struct Node *parent; /* parent node to source */
+    int effort;          /* total effort to reach this node (dijkstra) */
+    struct Node *parent; /* parent node to source (dijkstra) */
 
     int h_index; /* corresponding index in the heap */
+
+    struct Node *next; /* next node in the path */
 } Node;
 
 /*
@@ -36,16 +38,16 @@ typedef struct Edge
     Node *dst;  /* destination node */
     int weight; /* weight of the edge */
 
-    struct Edge *next; /* next edge in the adjacent list */
+    struct Edge *next; /* next edge in the adjacency list */
 } Edge;
 
 /*
-List of adjacent nodes
+List of edges from same source
 */
 typedef struct AdjacencyList
 {
-    struct Edge *head; /* pointer to the head of the list */
-    struct Edge *e;    /* pointer for list loops */
+    struct Edge *head; /* head of edges list */
+    struct Edge *e;    /* loop sentinel */
 } AdjacencyList;
 
 /*
@@ -68,6 +70,41 @@ typedef struct MinHeap
     int size;    /* real size of vector */
     Node **data; /* vector of nodes */
 } MinHeap;
+
+/*
+Output path of nodes
+*/
+typedef struct Path
+{
+    Node *head; /* head of nodes list */
+    Node *n;    /* loop sentinel*/
+    int effort; /* total cost of the path */
+} Path;
+
+/* UTILS */
+
+/*
+Checks if coordinates i,j are inside of a n x m matrix
+*/
+int matrix_in_bounds(const int i, const int j, const int n, const int m)
+{
+    return (i >= 0 &&
+            i < n &&
+            j >= 0 &&
+            j < m);
+}
+
+/*
+Sum x >= y >= 0 without overflowing (prevent errors with INT_MAX)
+*/
+int bounded_positive_sum(const int x, const int y)
+{
+    if (x >= INT_MAX - y)
+    {
+        return INT_MAX;
+    }
+    return x + y;
+}
 
 /* MEMORY */
 
@@ -101,25 +138,6 @@ void safe_free(void **ptr)
     *ptr = NULL;
 }
 
-/* UTILS */
-
-/*
-Checks if coordinates i,j are inside of a n x m matrix
-*/
-int matrix_in_bounds(const int i, const int j, const int n, const int m)
-{
-    return (i >= 0 &&
-            i < n &&
-            j >= 0 &&
-            j < m);
-}
-
-/* Return the square of an integer */
-int square_int(const int x)
-{
-    return x * x;
-}
-
 /* GRAPH */
 
 /*
@@ -132,11 +150,10 @@ Node *new_node(const int row, const int col, const int val)
     node->row = row;
     node->col = col;
     node->val = val;
-
     node->parent = NULL;
-    node->effort = UINT_MAX; /* simulate infinity */
-
+    node->effort = INT_MAX;
     node->h_index = -1;
+    node->next = NULL;
 
     return node;
 }
@@ -158,11 +175,11 @@ Edge *new_edge(Node *const src, Node *const dst, const int weight)
 }
 
 /*
-Calculate height difference weight
+Calculate height difference between x and y
 */
-int height_difference(const int x, const int y, const int C_height)
+int height_difference(const int x, const int y)
 {
-    return C_height * square_int(x - y);
+    return (x - y) * (x - y);
 }
 
 /*
@@ -192,7 +209,7 @@ void insert_adjacent(AdjacencyList *const list, Edge *const edge)
 Create edges between src and the 4 adjacent nodes
 while inserting them in the corresponding adjacency list
 */
-void connect_adjacents(Graph *const graph, Node *const src, const int C_height)
+void connect_adjacents(Graph *const graph, Node *const src)
 {
     int i, adj_row, adj_col, weight;
     Node *dst = NULL;
@@ -212,7 +229,7 @@ void connect_adjacents(Graph *const graph, Node *const src, const int C_height)
         {
             /* create edge */
             dst = graph->nodes[adj_row][adj_col];
-            weight = height_difference(src->val, dst->val, C_height);
+            weight = height_difference(src->val, dst->val);
             edge = new_edge(src, dst, weight);
 
             /* add to adjacency list */
@@ -389,7 +406,7 @@ void heap_extend(MinHeap *const heap)
 /*
 Changes the effort value and updates the heap accordingly
 */
-void decrease_effort(MinHeap *const heap, int i, const int new_effort)
+void heap_decrease(MinHeap *const heap, int i, const int new_effort)
 {
     int p;
     assert(new_effort <= heap->data[i]->effort);
@@ -407,16 +424,15 @@ void decrease_effort(MinHeap *const heap, int i, const int new_effort)
 /*
 Insert node in the heap with the specified effort value
 */
-void heap_insert(MinHeap *const heap, Node *const node, const int effort)
+void heap_insert(MinHeap *const heap, Node *const node)
 {
     int i;
 
     i = heap->n;
     heap_extend(heap);
     heap_set_node(heap, i, node);
-    node->effort = UINT_MAX;
 
-    decrease_effort(heap, node->h_index, effort);
+    heap_decrease(heap, node->h_index, node->effort);
 }
 
 /*
@@ -440,6 +456,133 @@ Node *heap_extract(MinHeap *const heap)
     min_heapify(heap, 0);
 
     return min;
+}
+
+/* DIJKSTRA */
+
+/*
+Per la ricerca del percorso più leggero, verrà utilizzato Dijkstra in quanto
+- Sono presenti cicli, il che scarta l'ordinamento topologico
+- I pesi sono tutti positivi (differenza di altitudine x costanti positive)
+- Il numero di archi del grafo è theta(n) (una cella della matrice ha max 4 adiacenti),
+  implementando quindi la coda utilizzata da Dijkstra tramite un heap, otteniamo un costo theta(nlog(n))
+*/
+
+/*
+Relax single edge
+*/
+void relax(Edge *const edge, MinHeap *const heap)
+{
+    int new_weight;
+
+    new_weight = bounded_positive_sum(edge->src->effort, edge->weight);
+    if (edge->dst->effort > new_weight)
+    {
+        heap_decrease(heap, edge->dst->h_index, new_weight);
+        edge->dst->parent = edge->src;
+    }
+}
+
+/*
+Initialize graph nodes to calculate shortest paths from src
+*/
+void init_single_source(Graph *const graph, Node *const src)
+{
+    int i, j;
+    Node *node;
+
+    for (i = 0; i < graph->n; i++)
+    {
+        for (j = 0; j < graph->m; j++)
+        {
+            node = graph->nodes[i][j];
+            node->effort = INT_MAX;
+            node->parent = NULL;
+        }
+    }
+
+    src->effort = 0;
+}
+
+/*
+Find lightest path from src to every node
+*/
+void dijkstra(Graph *const graph, Node *const src)
+{
+    MinHeap *Q;
+    int i, j;
+    Node *node;
+    AdjacencyList *adj;
+
+    init_single_source(graph, src);
+
+    /* fill Q with nodes */
+    Q = new_minheap();
+    for (i = 0; i < graph->n; i++)
+    {
+        for (j = 0; j < graph->m; j++)
+        {
+            heap_insert(Q, graph->nodes[i][j]);
+        }
+    }
+
+    while (heap_empty(Q) == 0)
+    {
+        node = heap_extract(Q);
+        adj = graph->adj[node->row][node->col];
+
+        /* loop adjacents */
+        adj->e = adj->head;
+        while (adj->e != NULL)
+        {
+            relax(adj->e, Q);
+
+            adj->e = adj->e->next;
+        }
+    }
+}
+
+/*
+Create new empty nodes path with initial effort
+*/
+Path *new_path(const int effort)
+{
+    Path *path;
+    path = (Path *)safe_malloc(1, sizeof(Path));
+    path->effort = effort;
+    path->head = NULL;
+
+    return path;
+}
+
+/*
+Add node to the path and increase the total path effort
+*/
+void push_node(Path *const path, Node *const node, const int C_cell)
+{
+    node->next = path->head;
+    path->head = node;
+    path->effort += C_cell;
+}
+
+/*
+Return path to dst based of previously executed dijkstra algorithm
+*/
+Path *extract_path(Node *const dst, const int C_cell, const int C_height)
+{
+    Path *path;
+
+    path = new_path(dst->effort * C_height);
+
+    path->n = dst;
+    while (path->n != NULL)
+    {
+        push_node(path, path->n, C_cell);
+
+        path->n = path->n->parent;
+    }
+
+    return path;
 }
 
 /* MAIN PROGRAM */
@@ -487,7 +630,6 @@ int **parse_file(FILE *filein,
 Convert the H matrix to a graph
 */
 Graph *matrix_to_graph(int **H,
-                       const int C_height,
                        const int n,
                        const int m)
 {
@@ -510,35 +652,54 @@ Graph *matrix_to_graph(int **H,
     {
         for (j = 0; j < m; j++)
         {
-            connect_adjacents(graph, graph->nodes[i][j], C_height);
+            connect_adjacents(graph, graph->nodes[i][j]);
         }
     }
 
     return graph;
 }
 
-void print_output()
+/*
+Print x y values divided by space and with a new line after
+*/
+void print_coordinates(const int row, const int col)
 {
+    printf("%d %d\n", row, col);
+}
+
+void print_output(Path *const path)
+{
+    path->n = path->head;
+    while (path->n != NULL)
+    {
+        print_coordinates(path->n->row, path->n->col);
+
+        path->n = path->n->next;
+    }
+
+    print_coordinates(END_OUTPUT_VAL, END_OUTPUT_VAL);
+    printf("%d\n", path->effort);
 }
 
 int main(int argc, char *argv[])
 {
-    char *filename = "test/test0.in";
+    char *filename;
     FILE *filein = stdin;
     int **H;
     int n, m, C_cell, C_height;
     Graph *graph;
+    Node *start, *end;
+    Path *path;
 
     /* get file name from command arguments */
-
-    /*
     if (argc != 2)
     {
         fprintf(stderr, "Invocare il programma con: %s input_file\n", argv[0]);
         return EXIT_FAILURE;
     }
     filename = argv[1];
-    */
+
+    /* filename = "test/test1.in"; */
 
     filein = fopen(filename, "r");
     if (filein == NULL)
@@ -555,12 +716,16 @@ int main(int argc, char *argv[])
         fclose(filein);
 
     /* convert the H matrix to a graph */
-    graph = matrix_to_graph(H, C_height, n, m);
+    graph = matrix_to_graph(H, n, m);
 
     /* find lightest path */
+    start = graph->nodes[0][0];
+    end = graph->nodes[n - 1][m - 1];
+    dijkstra(graph, start);
+    path = extract_path(end, C_cell, C_height);
 
     /* print the path found */
-    print_output();
+    print_output(path);
 
     return EXIT_SUCCESS;
 }
