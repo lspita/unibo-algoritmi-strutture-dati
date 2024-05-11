@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <limits.h>
 
-#define MIN_DIMENSION 5
-#define MAX_DIMENSION 250
+#define MIN_DIMENSION 5   /* minimum size of a matrix dimension */
+#define MAX_DIMENSION 250 /* maximum size of a matrix dimension */
+#define END_OUTPUT_VAL -1 /* value of x,y coordinates of last node in output */
 
-#define END_OUTPUT_VAL -1
+#define REALLOC_JUMP 10 /* number of cell to add every time extending a dynamic vector */
 
 /* STRUCTS */
 
@@ -20,7 +22,9 @@ typedef struct Node
     int val; /* height value */
 
     unsigned int effort; /* cost of path to this node */
-    struct Node *p;      /* parent node to source */
+    struct Node *parent; /* parent node to source */
+
+    int h_index; /* corresponding index in the heap */
 } Node;
 
 /*
@@ -65,63 +69,39 @@ typedef struct MinHeap
     Node **data; /* vector of nodes */
 } MinHeap;
 
-/* DEBUG */
-void print_graph(Graph *g)
-{
-    int i, j;
-    AdjacencyList *adj;
-
-    printf("GRAPH (%d x %d):\n-------------------\n", g->n, g->m);
-    for (i = 0; i < g->n; i++)
-    {
-        for (j = 0; j < g->m; j++)
-        {
-            printf("%d, ", g->nodes[i][j]->val);
-        }
-        putchar('\n');
-    }
-
-    printf("EDGES:\n");
-    for (i = 0; i < g->n; i++)
-    {
-        for (j = 0; j < g->m; j++)
-        {
-            printf("[%d, %d]-> ", i, j);
-
-            adj = g->adj[i][j];
-            adj->e = adj->head;
-            while (adj->e != NULL)
-            {
-                printf("[%d, %d], ", adj->e->dst->row, adj->e->dst->col);
-
-                adj->e = adj->e->next;
-            }
-            putchar('\n');
-        }
-    }
-}
-
-/* UTILS */
+/* MEMORY */
 
 /*
 Try to allocate nxsize bytes of memory and assert it is allocated (!= NULL)
 */
 void *safe_malloc(const int n, const size_t size)
 {
-    void *p = NULL;
-    p = (void *)malloc(n * size);
-    assert(p != NULL);
-    return p;
+    void *ptr = NULL;
+    ptr = (void *)malloc(n * size);
+    assert(ptr != NULL);
+    return ptr;
+}
+
+/*
+Try to extend a memory allocation to nxsize bytes and assert it is allocated (!= NULL)
+*/
+void *safe_realloc(void *ptr, const int n, const size_t size)
+{
+    ptr = (void *)realloc(ptr, n * size);
+    assert(ptr != NULL);
+    return ptr;
 }
 
 /*
 Free memory and set pointer to NULL
 */
-void safe_free(void **p)
+void safe_free(void **ptr)
 {
-    free(*p);
-    *p = NULL;
+    free(*ptr);
+    *ptr = NULL;
 }
+
+/* UTILS */
 
 /*
 Checks if coordinates i,j are inside of a n x m matrix
@@ -147,13 +127,18 @@ Create node
 */
 Node *new_node(const int row, const int col, const int val)
 {
-    Node *n;
-    n = (Node *)safe_malloc(1, sizeof(Node));
-    n->row = row;
-    n->col = col;
-    n->val = val;
+    Node *node;
+    node = (Node *)safe_malloc(1, sizeof(Node));
+    node->row = row;
+    node->col = col;
+    node->val = val;
 
-    return n;
+    node->parent = NULL;
+    node->effort = UINT_MAX; /* simulate infinity */
+
+    node->h_index = -1;
+
+    return node;
 }
 
 /*
@@ -161,17 +146,15 @@ Create edge between two nodes
 */
 Edge *new_edge(Node *const src, Node *const dst, const int weight)
 {
-    Edge *e;
-    assert(src != NULL);
-    assert(dst != NULL);
+    Edge *edge;
 
-    e = (Edge *)safe_malloc(1, sizeof(Edge));
-    e->src = src;
-    e->dst = dst;
-    e->weight = weight;
-    e->next = NULL;
+    edge = (Edge *)safe_malloc(1, sizeof(Edge));
+    edge->src = src;
+    edge->dst = dst;
+    edge->weight = weight;
+    edge->next = NULL;
 
-    return e;
+    return edge;
 }
 
 /*
@@ -199,11 +182,8 @@ AdjacencyList *new_adjacency_list()
 /*
 Head insert an edge to an adjacency list
 */
-void push_adjacent(Edge *const edge, AdjacencyList *const list)
+void insert_adjacent(AdjacencyList *const list, Edge *const edge)
 {
-    assert(edge != NULL);
-    assert(list != NULL);
-
     edge->next = list->head;
     list->head = edge;
 }
@@ -212,11 +192,11 @@ void push_adjacent(Edge *const edge, AdjacencyList *const list)
 Create edges between src and the 4 adjacent nodes
 while inserting them in the corresponding adjacency list
 */
-void connect_adjacents(Graph *const g, Node *const src, const int C_height)
+void connect_adjacents(Graph *const graph, Node *const src, const int C_height)
 {
-    int i, adj_row, adj_col, w;
+    int i, adj_row, adj_col, weight;
     Node *dst = NULL;
-    Edge *e = NULL;
+    Edge *edge = NULL;
 
     /* prepare x,y movements to select 4 adjacents */
     int mov_row[4] = {0, -1, 0, 1};
@@ -228,15 +208,15 @@ void connect_adjacents(Graph *const g, Node *const src, const int C_height)
         adj_row = src->row + mov_row[i];
         adj_col = src->col + mov_col[i];
 
-        if (matrix_in_bounds(adj_row, adj_col, g->n, g->m) == 1) /* adjacent node in bounds */
+        if (matrix_in_bounds(adj_row, adj_col, graph->n, graph->m) == 1) /* adjacent node in bounds */
         {
             /* create edge */
-            dst = g->nodes[adj_row][adj_col];
-            w = height_difference(src->val, dst->val, C_height);
-            e = new_edge(src, dst, w);
+            dst = graph->nodes[adj_row][adj_col];
+            weight = height_difference(src->val, dst->val, C_height);
+            edge = new_edge(src, dst, weight);
 
             /* add to adjacency list */
-            push_adjacent(e, g->adj[src->row][src->col]);
+            insert_adjacent(graph->adj[src->row][src->col], edge);
         }
     }
 }
@@ -247,31 +227,31 @@ Create new empty graph with n x m nodes
 Graph *new_graph(const int n, const int m)
 {
     int i, j;
-    Graph *g;
-    g = (Graph *)safe_malloc(1, sizeof(Graph));
+    Graph *graph;
+    graph = (Graph *)safe_malloc(1, sizeof(Graph));
 
-    g->n = n;
-    g->m = m;
+    graph->n = n;
+    graph->m = m;
 
     /* init nodes */
-    g->nodes = (Node ***)safe_malloc(n, sizeof(Node **));
+    graph->nodes = (Node ***)safe_malloc(n, sizeof(Node **));
     for (i = 0; i < n; i++)
     {
-        g->nodes[i] = (Node **)safe_malloc(m, sizeof(Node *));
+        graph->nodes[i] = (Node **)safe_malloc(m, sizeof(Node *));
     }
 
     /* init adjacency lists */
-    g->adj = (AdjacencyList ***)safe_malloc(n, sizeof(AdjacencyList **));
+    graph->adj = (AdjacencyList ***)safe_malloc(n, sizeof(AdjacencyList **));
     for (i = 0; i < n; i++)
     {
-        g->adj[i] = (AdjacencyList **)safe_malloc(m, sizeof(AdjacencyList *));
+        graph->adj[i] = (AdjacencyList **)safe_malloc(m, sizeof(AdjacencyList *));
         for (j = 0; j < m; j++)
         {
-            g->adj[i][j] = new_adjacency_list();
+            graph->adj[i][j] = new_adjacency_list();
         }
     }
 
-    return g;
+    return graph;
 }
 
 /* HEAP */
@@ -281,27 +261,57 @@ Create empty min heap
 */
 MinHeap *new_minheap()
 {
-    MinHeap *h;
-    h = (MinHeap *)safe_malloc(1, sizeof(MinHeap));
+    MinHeap *heap;
+    heap = (MinHeap *)safe_malloc(1, sizeof(MinHeap));
 
-    h->data = NULL;
-    h->size = h->n = 0;
+    heap->data = NULL;
+    heap->size = heap->n = 0;
 
-    return h;
+    return heap;
 }
 
 /*
-Checks if i is a valid index in the h heap
+Check if i is a valid index in the h heap
 */
-int valid(const MinHeap *const h, const int i)
+int heap_valid(const MinHeap *const heap, const int i)
 {
-    assert(h != NULL);
-
-    return ((i >= 0) && (i < h->n));
+    return ((i >= 0) && (i < heap->n));
 }
 
 /*
-Returns parent node index of i
+Check if heap is empty
+*/
+int heap_empty(const MinHeap *const heap)
+{
+    return heap->n == 0;
+}
+
+/*
+Return root of heap
+*/
+Node *heap_min(const MinHeap *const heap)
+{
+    if (heap_empty(heap))
+    {
+        return NULL;
+    }
+
+    return heap->data[0];
+}
+
+/*
+Set heap[i] = node and update node.h_index
+*/
+void heap_set_node(MinHeap *const heap, const int i, Node *const node)
+{
+    assert(heap_valid(heap, i));
+
+    heap->data[i] = node;
+    node->h_index = i;
+}
+
+/*
+Return parent node index of i
 */
 int heap_parent(const int i)
 {
@@ -309,7 +319,7 @@ int heap_parent(const int i)
 }
 
 /*
-Returns left child node index of i
+Return left child node index of i
 */
 int heap_left(const int i)
 {
@@ -317,7 +327,7 @@ int heap_left(const int i)
 }
 
 /*
-Returns right child node index of i
+Return right child node index of i
 */
 int heap_right(const int i)
 {
@@ -327,22 +337,19 @@ int heap_right(const int i)
 /*
 Swap heap[i] and heap[j]
 */
-void heap_swap(MinHeap *const h, const int i, const int j)
+void heap_swap(MinHeap *const heap, const int i, const int j)
 {
     Node *tmp = NULL;
 
-    assert(valid(h, i));
-    assert(valid(h, j));
-
-    tmp = h->data[i];
-    h->data[i] = h->data[j];
-    h->data[j] = tmp;
+    tmp = heap->data[i];
+    heap_set_node(heap, i, heap->data[j]);
+    heap_set_node(heap, j, tmp);
 }
 
 /*
 Transform single position to follow the min heap structure
 */
-void min_heapify(MinHeap *const h, const int i)
+void min_heapify(MinHeap *const heap, const int i)
 {
     int l, r, smallest;
     smallest = i;
@@ -350,24 +357,89 @@ void min_heapify(MinHeap *const h, const int i)
     l = heap_left(i);
     r = heap_right(i);
 
-    if (valid(h, l) && h->data[l]->effort < h->data[i]->effort)
+    if (heap_valid(heap, l) && heap->data[l]->effort < heap->data[smallest]->effort)
     {
         smallest = l;
     }
-    else if (valid(h, r) && h->data[r]->effort < h->data[i]->effort)
+    if (heap_valid(heap, r) && heap->data[r]->effort < heap->data[smallest]->effort)
     {
         smallest = r;
     }
 
     if (smallest != i)
     {
-        heap_swap(h, i, smallest);
-        min_heapify(h, smallest);
+        heap_swap(heap, i, smallest);
+        min_heapify(heap, smallest);
     }
 }
 
-void push_node_heap(MinHeap *const h, Node *const n)
+/*
+Extend size of heap vector
+*/
+void heap_extend(MinHeap *const heap)
 {
+    if (heap->n >= heap->size)
+    {
+        heap->size = heap->n + REALLOC_JUMP;
+        heap->data = (Node **)safe_realloc(heap->data, heap->size, sizeof(Node *));
+    }
+    heap->n++;
+}
+
+/*
+Changes the effort value and updates the heap accordingly
+*/
+void decrease_effort(MinHeap *const heap, int i, const int new_effort)
+{
+    int p;
+    assert(new_effort <= heap->data[i]->effort);
+
+    heap->data[i]->effort = new_effort;
+    p = heap_parent(i);
+    while (heap_valid(heap, p) && heap->data[p]->effort > heap->data[i]->effort)
+    {
+        heap_swap(heap, p, i);
+        i = p;
+        p = heap_parent(i);
+    }
+}
+
+/*
+Insert node in the heap with the specified effort value
+*/
+void heap_insert(MinHeap *const heap, Node *const node, const int effort)
+{
+    int i;
+
+    i = heap->n;
+    heap_extend(heap);
+    heap_set_node(heap, i, node);
+    node->effort = UINT_MAX;
+
+    decrease_effort(heap, node->h_index, effort);
+}
+
+/*
+Extract root of heap
+*/
+Node *heap_extract(MinHeap *const heap)
+{
+    Node *min;
+    int i;
+
+    min = heap_min(heap);
+    if (min == NULL)
+    {
+        return NULL;
+    }
+    min->h_index = -1;
+
+    i = heap->n - 1;
+    heap_swap(heap, 0, i);
+    heap->n--;
+    min_heapify(heap, 0);
+
+    return min;
 }
 
 /* MAIN PROGRAM */
@@ -420,16 +492,16 @@ Graph *matrix_to_graph(int **H,
                        const int m)
 {
     int i, j;
-    Graph *g;
+    Graph *graph;
 
-    g = new_graph(n, m);
+    graph = new_graph(n, m);
 
     /* add nodes */
     for (i = 0; i < n; i++)
     {
         for (j = 0; j < m; j++)
         {
-            g->nodes[i][j] = new_node(i, j, H[i][j]);
+            graph->nodes[i][j] = new_node(i, j, H[i][j]);
         }
     }
 
@@ -438,17 +510,58 @@ Graph *matrix_to_graph(int **H,
     {
         for (j = 0; j < m; j++)
         {
-            connect_adjacents(g, g->nodes[i][j], C_height);
+            connect_adjacents(graph, graph->nodes[i][j], C_height);
         }
     }
 
-    print_graph(g);
-
-    return g;
+    return graph;
 }
 
 void print_output()
 {
+}
+
+void test()
+{
+    MinHeap *heap;
+    Node *n;
+    int i;
+
+    heap = new_minheap();
+
+    n = new_node(0, 0, 0);
+    heap_insert(heap, n, 5);
+    n = new_node(1, 1, 1);
+    heap_insert(heap, n, 1);
+    n = new_node(2, 2, 2);
+    heap_insert(heap, n, 20);
+    n = new_node(3, 3, 3);
+    heap_insert(heap, n, 12);
+    n = new_node(4, 4, 4);
+    heap_insert(heap, n, 3);
+    n = new_node(4, 4, 4);
+    heap_insert(heap, n, 36);
+    n = new_node(4, 4, 4);
+    heap_insert(heap, n, 0);
+    n = new_node(4, 4, 4);
+    heap_insert(heap, n, 4);
+
+    printf("\nn: %d\n\n", heap->n);
+
+    while (heap_empty(heap) == 0)
+    {
+        n = heap_extract(heap);
+        printf("(%d: %d) || ", n->h_index, n->effort);
+        for (i = 0; i < heap->n; i++)
+        {
+            printf("(%d: %d), ", heap->data[i]->h_index, heap->data[i]->effort);
+        }
+        putchar('\n');
+    }
+
+    printf("\nn: %d\n", heap->n);
+
+    exit(0);
 }
 
 int main(int argc, char *argv[])
@@ -457,7 +570,7 @@ int main(int argc, char *argv[])
     FILE *filein = stdin;
     int **H;
     int n, m, C_cell, C_height;
-    Graph *g;
+    Graph *graph;
 
     /* get file name from command arguments */
 
@@ -469,6 +582,8 @@ int main(int argc, char *argv[])
     }
     filename = argv[1];
     */
+
+    test();
 
     filein = fopen(filename, "r");
     if (filein == NULL)
@@ -485,7 +600,7 @@ int main(int argc, char *argv[])
         fclose(filein);
 
     /* convert the H matrix to a graph */
-    g = matrix_to_graph(H, C_height, n, m);
+    graph = matrix_to_graph(H, C_height, n, m);
 
     /* find lightest path */
 
