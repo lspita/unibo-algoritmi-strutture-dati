@@ -111,13 +111,15 @@ int bounded_positive_sum(const int x, const int y)
 /* MEMORY */
 
 /*
-Try to allocate nxsize bytes of memory and assert it is allocated (!= NULL)
+Try to allocate nxsize bytes of memory to 0 and assert it is allocated (!= NULL)
 */
 void *safe_malloc(const int n, const size_t size)
 {
     void *ptr = NULL;
-    ptr = (void *)malloc(n * size);
+
+    ptr = (void *)calloc(n, size);
     assert(ptr != NULL);
+
     return ptr;
 }
 
@@ -136,6 +138,8 @@ Free memory and set pointer to NULL
 */
 void safe_free(void **ptr)
 {
+    assert(ptr != NULL);
+
     free(*ptr);
     *ptr = NULL;
 }
@@ -149,11 +153,12 @@ Node *new_node(const int row, const int col, const int val)
 {
     Node *node;
     node = (Node *)safe_malloc(1, sizeof(Node));
+
     node->row = row;
     node->col = col;
     node->val = val;
-    node->parent = NULL;
     node->effort = INT_MAX;
+    node->parent = NULL;
     node->h_index = -1;
     node->next = NULL;
 
@@ -167,7 +172,11 @@ Edge *new_edge(Node *const src, Node *const dst, const int weight)
 {
     Edge *edge;
 
+    assert(src != NULL);
+    assert(dst != NULL);
+
     edge = (Edge *)safe_malloc(1, sizeof(Edge));
+
     edge->src = src;
     edge->dst = dst;
     edge->weight = weight;
@@ -190,6 +199,7 @@ Create an empty adjacency list
 AdjacencyList *new_adjacency_list()
 {
     AdjacencyList *adj;
+
     adj = (AdjacencyList *)safe_malloc(1, sizeof(AdjacencyList));
 
     adj->e = NULL;
@@ -203,6 +213,9 @@ Head insert an edge to an adjacency list
 */
 void insert_adjacent(AdjacencyList *const list, Edge *const edge)
 {
+    assert(list != NULL);
+    assert(edge != NULL);
+
     edge->next = list->head;
     list->head = edge;
 }
@@ -220,6 +233,9 @@ void connect_adjacents(Graph *const graph, Node *const src)
     /* prepare x,y movements to select 4 adjacents */
     int mov_row[4] = {0, -1, 0, 1};
     int mov_col[4] = {-1, 0, 1, 0};
+
+    assert(graph != NULL);
+    assert(src != NULL);
 
     /* loop 4 adjacent nodes */
     for (i = 0; i <= 4; i++)
@@ -253,18 +269,18 @@ Graph *new_graph(const int n, const int m)
     graph->m = m;
 
     /* init nodes */
-    graph->nodes = (Node ***)safe_malloc(n, sizeof(Node **));
-    for (i = 0; i < n; i++)
+    graph->nodes = (Node ***)safe_malloc(graph->n, sizeof(Node **));
+    for (i = 0; i < graph->n; i++)
     {
-        graph->nodes[i] = (Node **)safe_malloc(m, sizeof(Node *));
+        graph->nodes[i] = (Node **)safe_malloc(graph->m, sizeof(Node *));
     }
 
     /* init adjacency lists */
-    graph->adj = (AdjacencyList ***)safe_malloc(n, sizeof(AdjacencyList **));
-    for (i = 0; i < n; i++)
+    graph->adj = (AdjacencyList ***)safe_malloc(graph->n, sizeof(AdjacencyList **));
+    for (i = 0; i < graph->n; i++)
     {
-        graph->adj[i] = (AdjacencyList **)safe_malloc(m, sizeof(AdjacencyList *));
-        for (j = 0; j < m; j++)
+        graph->adj[i] = (AdjacencyList **)safe_malloc(graph->m, sizeof(AdjacencyList *));
+        for (j = 0; j < graph->m; j++)
         {
             graph->adj[i][j] = new_adjacency_list();
         }
@@ -286,31 +302,42 @@ Output params:
 - m: columns of H
 */
 int **parse_file(FILE *filein,
-                 int *const C_cell,
-                 int *const C_height,
-                 int *const n,
-                 int *const m)
+                 int *const out_C_cell,
+                 int *const out_C_height,
+                 int *const out_n,
+                 int *const out_m)
 {
     int **H;
-    int i, j;
+    int i, j, C_cell, C_height, n, m;
+
+    assert(filein != NULL);
+    assert(out_C_cell != NULL);
+    assert(out_C_height != NULL);
+    assert(out_n != NULL);
+    assert(out_m != NULL);
 
     /* read parameters */
-    fscanf(filein, "%d", C_cell);
-    fscanf(filein, "%d", C_height);
-    fscanf(filein, "%d", n);
-    fscanf(filein, "%d", m);
+    fscanf(filein, "%d", &C_cell);
+    fscanf(filein, "%d", &C_height);
+    fscanf(filein, "%d", &n);
+    fscanf(filein, "%d", &m);
 
     /* read matrix */
-    H = (int **)safe_malloc(*n, sizeof(int *));
-    for (i = 0; i < *n; i++)
+    H = (int **)safe_malloc(n, sizeof(int *));
+    for (i = 0; i < n; i++)
     {
-        H[i] = (int *)safe_malloc(*m, sizeof(int));
-        for (j = 0; j < *m; j++)
+        H[i] = (int *)safe_malloc(m, sizeof(int));
+        for (j = 0; j < m; j++)
         {
             fscanf(filein, "%d", &(H[i][j]));
         }
     }
 
+    /* set out parameters */
+    *out_C_cell = C_cell;
+    *out_C_height = C_height;
+    *out_n = n;
+    *out_m = m;
     return H;
 }
 
@@ -323,6 +350,8 @@ Graph *matrix_to_graph(int **H,
 {
     int i, j;
     Graph *graph;
+
+    assert(H != NULL);
 
     graph = new_graph(n, m);
 
@@ -358,7 +387,8 @@ MinHeap *new_minheap()
     heap = (MinHeap *)safe_malloc(1, sizeof(MinHeap));
 
     heap->data = NULL;
-    heap->size = heap->n = 0;
+    heap->size = 0;
+    heap->n = 0;
 
     return heap;
 }
@@ -368,6 +398,8 @@ Check if i is a valid index in the h heap
 */
 int heap_valid(const MinHeap *const heap, const int i)
 {
+    assert(heap != NULL);
+
     return ((i >= 0) && (i < heap->n));
 }
 
@@ -376,6 +408,8 @@ Check if heap is empty
 */
 int heap_empty(const MinHeap *const heap)
 {
+    assert(heap != NULL);
+
     return heap->n == 0;
 }
 
@@ -384,6 +418,8 @@ Return root of heap
 */
 Node *heap_min(const MinHeap *const heap)
 {
+    assert(heap != NULL);
+
     if (heap_empty(heap))
     {
         return NULL;
@@ -395,12 +431,25 @@ Node *heap_min(const MinHeap *const heap)
 /*
 Set heap[i] = node and update node.h_index
 */
-void heap_set_node(MinHeap *const heap, const int i, Node *const node)
+void heap_set(MinHeap *const heap, const int i, Node *const node)
 {
+    assert(heap != NULL);
+    assert(node != NULL);
     assert(heap_valid(heap, i));
 
     heap->data[i] = node;
     node->h_index = i;
+}
+
+/*
+Return key at heap[i]
+*/
+int heap_get(MinHeap *const heap, const int i)
+{
+    assert(heap != NULL);
+    assert(heap_valid(heap, i));
+
+    return heap->data[i]->effort;
 }
 
 /*
@@ -432,11 +481,15 @@ Swap heap[i] and heap[j]
 */
 void heap_swap(MinHeap *const heap, const int i, const int j)
 {
-    Node *tmp = NULL;
+    Node *tmp;
+
+    assert(heap != NULL);
+    assert(heap_valid(heap, i));
+    assert(heap_valid(heap, j));
 
     tmp = heap->data[i];
-    heap_set_node(heap, i, heap->data[j]);
-    heap_set_node(heap, j, tmp);
+    heap_set(heap, i, heap->data[j]);
+    heap_set(heap, j, tmp);
 }
 
 /*
@@ -445,16 +498,19 @@ Transform single position to follow the min heap structure
 void min_heapify(MinHeap *const heap, const int i)
 {
     int l, r, smallest;
-    smallest = i;
+
+    assert(heap != NULL);
+    assert(heap_valid(heap, i));
 
     l = heap_left(i);
     r = heap_right(i);
 
-    if (heap_valid(heap, l) && heap->data[l]->effort < heap->data[smallest]->effort)
+    smallest = i;
+    if (heap_valid(heap, l) && heap_get(heap, l) < heap_get(heap, smallest))
     {
         smallest = l;
     }
-    if (heap_valid(heap, r) && heap->data[r]->effort < heap->data[smallest]->effort)
+    if (heap_valid(heap, r) && heap_get(heap, r) < heap_get(heap, smallest))
     {
         smallest = r;
     }
@@ -467,10 +523,12 @@ void min_heapify(MinHeap *const heap, const int i)
 }
 
 /*
-Extend size of heap vector
+Extend size of heap vector by 1
 */
 void heap_extend(MinHeap *const heap)
 {
+    assert(heap != NULL);
+
     if (heap->n >= heap->size)
     {
         heap->size = heap->n + REALLOC_JUMP;
@@ -485,13 +543,16 @@ Changes the effort value and updates the heap accordingly
 void heap_decrease(MinHeap *const heap, int i, const int new_effort)
 {
     int p;
+
+    assert(heap != NULL);
+    assert(heap_valid(heap, i));
     assert(new_effort <= heap->data[i]->effort);
 
     heap->data[i]->effort = new_effort;
     p = heap_parent(i);
-    while (heap_valid(heap, p) && heap->data[p]->effort > heap->data[i]->effort)
+    while (heap_valid(heap, p) && heap_get(heap, p) > heap_get(heap, i))
     {
-        heap_swap(heap, p, i);
+        heap_swap(heap, i, p);
         i = p;
         p = heap_parent(i);
     }
@@ -504,10 +565,12 @@ void heap_insert(MinHeap *const heap, Node *const node)
 {
     int last;
 
+    assert(heap != NULL);
+    assert(node != NULL);
+
     last = heap->n;
     heap_extend(heap);
-    heap_set_node(heap, last, node);
-
+    heap_set(heap, last, node);
     heap_decrease(heap, node->h_index, node->effort);
 }
 
@@ -519,6 +582,8 @@ Node *heap_extract(MinHeap *const heap)
     Node *min;
     int last;
 
+    assert(heap != NULL);
+
     min = heap_min(heap);
     if (min == NULL)
     {
@@ -526,9 +591,12 @@ Node *heap_extract(MinHeap *const heap)
     }
 
     last = heap->n - 1;
-    heap_set_node(heap, 0, heap->data[last]);
+    heap_set(heap, 0, heap->data[last]);
     heap->n--;
-    min_heapify(heap, 0);
+    if (heap->n > 0)
+    {
+        min_heapify(heap, 0);
+    }
 
     min->h_index = -1;
     return min;
@@ -551,6 +619,9 @@ void relax(Edge *const edge, MinHeap *const heap)
 {
     int new_weight;
 
+    assert(edge != NULL);
+    assert(heap != NULL);
+
     new_weight = bounded_positive_sum(edge->src->effort, edge->weight);
     if (edge->dst->effort > new_weight)
     {
@@ -566,6 +637,9 @@ void init_single_source(Graph *const graph, Node *const src)
 {
     int i, j;
     Node *node;
+
+    assert(graph != NULL);
+    assert(src != NULL);
 
     for (i = 0; i < graph->n; i++)
     {
@@ -589,6 +663,9 @@ void dijkstra(Graph *const graph, Node *const src)
     int i, j;
     Node *node;
     AdjacencyList *adj;
+
+    assert(graph != NULL);
+    assert(src != NULL);
 
     init_single_source(graph, src);
 
@@ -627,6 +704,7 @@ Path *new_path(const int effort)
 {
     Path *path;
     path = (Path *)safe_malloc(1, sizeof(Path));
+
     path->effort = effort;
     path->head = NULL;
 
@@ -638,6 +716,9 @@ Add node to the path and increase the total path effort
 */
 void push_node(Path *const path, Node *const node, const int C_cell)
 {
+    assert(path != NULL);
+    assert(node != NULL);
+
     node->next = path->head;
     path->head = node;
     path->effort += C_cell;
@@ -649,6 +730,8 @@ Return path to dst based of previously executed dijkstra algorithm
 Path *extract_path(Node *const dst, const int C_cell, const int C_height)
 {
     Path *path;
+
+    assert(dst != NULL);
 
     path = new_path(dst->effort * C_height);
 
@@ -676,6 +759,8 @@ Print path nodes and effort
 */
 void print_path(Path *const path)
 {
+    assert(path != NULL);
+
     path->n = path->head;
     while (path->n != NULL)
     {
@@ -701,14 +786,16 @@ int main(int argc, char *argv[])
     Path *path;
 
     /* get file name from command arguments */
+    /*
     if (argc != 2)
     {
         fprintf(stderr, "Invocare il programma con: %s input_file\n", argv[0]);
         return EXIT_FAILURE;
     }
     filename = argv[1];
+    */
 
-    /* filename = "test/test3.in"; */ /* DEBUG */
+    filename = "test/test3.in"; /* DEBUG */
 
     filein = fopen(filename, "r");
     if (filein == NULL)
@@ -730,6 +817,7 @@ int main(int argc, char *argv[])
     /* find lightest path */
     start = graph->nodes[0][0];
     end = graph->nodes[n - 1][m - 1];
+
     dijkstra(graph, start);
     path = extract_path(end, C_cell, C_height);
 
