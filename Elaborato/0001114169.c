@@ -20,8 +20,8 @@ typedef struct Node
     int col; /* x position in matrix */
     int val; /* height value */
 
-    int effort;          /* total effort to reach this node (dijkstra) */
-    struct Node *parent; /* parent node to source (dijkstra) */
+    int effort;          /* total effort to reach this node in the path (dijkstra) */
+    struct Node *parent; /* parent node in the path (dijkstra) */
 
     int h_index; /* corresponding index in the heap */
 
@@ -83,29 +83,14 @@ typedef struct Path
 /* UTILS */
 
 /*
-Checks if coordinates i,j are inside of a n x m matrix
+Check if i,j are between 0..n,m
 */
-int matrix_in_bounds(const int i, const int j, const int n, const int m)
+int in_bounds(const int i, const int j, const int n, const int m)
 {
     return (i >= 0 &&
             i < n &&
             j >= 0 &&
             j < m);
-}
-
-/*
-Sum x,y without overflowing (prevent errors with INT_MAX)
-*/
-int bounded_positive_sum(const int x, const int y)
-{
-    /*
-    Check if x + y >= INT_MAX but without doing the sum (prevent overflow)
-     */
-    if (x >= INT_MAX - y)
-    {
-        return INT_MAX;
-    }
-    return x + y;
 }
 
 /* MEMORY */
@@ -243,7 +228,7 @@ void connect_adjacents(Graph *const graph, Node *const src)
         adj_row = src->row + mov_row[i];
         adj_col = src->col + mov_col[i];
 
-        if (matrix_in_bounds(adj_row, adj_col, graph->n, graph->m) == 1) /* adjacent node in bounds */
+        if (in_bounds(adj_row, adj_col, graph->n, graph->m) == 1) /* adjacent node in bounds */
         {
             /* create edge */
             dst = graph->nodes[adj_row][adj_col];
@@ -615,17 +600,17 @@ Per la ricerca del percorso più leggero, verrà utilizzato Dijkstra in quanto
 /*
 Relax single edge
 */
-void relax(Edge *const edge, MinHeap *const heap)
+void relax(Edge *const edge, MinHeap *const heap, const int C_cell, const int C_height)
 {
-    int new_weight;
+    int new_effort;
 
     assert(edge != NULL);
     assert(heap != NULL);
 
-    new_weight = bounded_positive_sum(edge->src->effort, edge->weight);
-    if (edge->dst->effort > new_weight)
+    new_effort = edge->src->effort + (edge->weight * C_height) + C_cell;
+    if (edge->dst->effort > new_effort)
     {
-        heap_decrease(heap, edge->dst->h_index, new_weight);
+        heap_decrease(heap, edge->dst->h_index, new_effort);
         edge->dst->parent = edge->src;
     }
 }
@@ -633,7 +618,7 @@ void relax(Edge *const edge, MinHeap *const heap)
 /*
 Initialize graph nodes to calculate shortest paths from src
 */
-void init_single_source(Graph *const graph, Node *const src)
+void init_single_source(Graph *const graph, Node *const src, const int C_cell)
 {
     int i, j;
     Node *node;
@@ -651,13 +636,13 @@ void init_single_source(Graph *const graph, Node *const src)
         }
     }
 
-    src->effort = 0;
+    src->effort = C_cell;
 }
 
 /*
 Find lightest path from src to every node
 */
-void dijkstra(Graph *const graph, Node *const src)
+void dijkstra(Graph *const graph, Node *const src, const int C_cell, const int C_height)
 {
     MinHeap *Q;
     int i, j;
@@ -667,7 +652,7 @@ void dijkstra(Graph *const graph, Node *const src)
     assert(graph != NULL);
     assert(src != NULL);
 
-    init_single_source(graph, src);
+    init_single_source(graph, src, C_cell);
 
     /* fill Q with nodes */
     Q = new_minheap();
@@ -688,7 +673,7 @@ void dijkstra(Graph *const graph, Node *const src)
         adj->e = adj->head;
         while (adj->e != NULL)
         {
-            relax(adj->e, Q);
+            relax(adj->e, Q, C_cell, C_height);
 
             adj->e = adj->e->next;
         }
@@ -698,14 +683,14 @@ void dijkstra(Graph *const graph, Node *const src)
 /* PATH */
 
 /*
-Create new empty nodes path with initial effort
+Create new empty nodes path
 */
-Path *new_path(const int effort)
+Path *new_path()
 {
     Path *path;
     path = (Path *)safe_malloc(1, sizeof(Path));
 
-    path->effort = effort;
+    path->effort = 0;
     path->head = NULL;
 
     return path;
@@ -714,31 +699,31 @@ Path *new_path(const int effort)
 /*
 Add node to the path and increase the total path effort
 */
-void push_node(Path *const path, Node *const node, const int C_cell)
+void push_node(Path *const path, Node *const node)
 {
     assert(path != NULL);
     assert(node != NULL);
 
     node->next = path->head;
     path->head = node;
-    path->effort += C_cell;
 }
 
 /*
 Return path to dst based of previously executed dijkstra algorithm
 */
-Path *extract_path(Node *const dst, const int C_cell, const int C_height)
+Path *extract_path(Node *const dst)
 {
     Path *path;
 
     assert(dst != NULL);
 
-    path = new_path(dst->effort * C_height);
+    path = new_path();
+    path->effort += dst->effort;
 
     path->n = dst;
     while (path->n != NULL)
     {
-        push_node(path, path->n, C_cell);
+        push_node(path, path->n);
 
         path->n = path->n->parent;
     }
@@ -786,16 +771,15 @@ int main(int argc, char *argv[])
     Path *path;
 
     /* get file name from command arguments */
-    /*
+
     if (argc != 2)
     {
         fprintf(stderr, "Invocare il programma con: %s input_file\n", argv[0]);
         return EXIT_FAILURE;
     }
     filename = argv[1];
-    */
 
-    filename = "test/test3.in"; /* DEBUG */
+    /* filename = "test/test1.in"; */ /* DEBUG */
 
     filein = fopen(filename, "r");
     if (filein == NULL)
@@ -818,8 +802,8 @@ int main(int argc, char *argv[])
     start = graph->nodes[0][0];
     end = graph->nodes[n - 1][m - 1];
 
-    dijkstra(graph, start);
-    path = extract_path(end, C_cell, C_height);
+    dijkstra(graph, start, C_cell, C_height);
+    path = extract_path(end);
 
     /* print the path found */
     print_path(path);
