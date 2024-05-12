@@ -8,7 +8,7 @@ COMPILE="gcc -std=c90 -Wall -Wpedantic ${MAINFILE}.c -o ${MAINFILE}"
 TEST_START=$1
 TEST_END=$2
 
-printf "TESTS: $TEST_START to $TEST_END\n\n"
+printf "TESTS: $TEST_START to $TEST_END\n"
 
 eval "${COMPILE}"
 
