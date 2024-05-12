@@ -118,17 +118,6 @@ void *safe_realloc(void *ptr, const int n, const size_t size)
     return ptr;
 }
 
-/*
-Free memory and set pointer to NULL
-*/
-void safe_free(void **ptr)
-{
-    assert(ptr != NULL);
-
-    free(*ptr);
-    *ptr = NULL;
-}
-
 /* GRAPH */
 
 /*
@@ -191,6 +180,27 @@ AdjacencyList *new_adjacency_list()
     adj->head = NULL;
 
     return adj;
+}
+
+/*
+Deallocate adjacency list memory
+*/
+void free_adjacency_list(AdjacencyList *adj)
+{
+    Edge *next;
+
+    assert(adj != NULL);
+
+    adj->e = adj->head;
+
+    while (adj->e != NULL)
+    {
+        next = adj->e->next;
+        free(adj->e);
+        adj->e = next;
+    }
+
+    free(adj);
 }
 
 /*
@@ -272,6 +282,32 @@ Graph *new_graph(const int n, const int m)
     }
 
     return graph;
+}
+
+/*
+Deallocate graph memory
+*/
+void free_graph(Graph *graph)
+{
+    int i, j;
+
+    assert(graph != NULL);
+
+    for (i = 0; i < graph->n; i++)
+    {
+        for (j = 0; j < graph->m; j++)
+        {
+            free(graph->nodes[i][j]);
+            free_adjacency_list(graph->adj[i][j]);
+        }
+        free(graph->nodes[i]);
+        free(graph->adj[i]);
+    }
+
+    free(graph->nodes);
+    free(graph->adj);
+
+    free(graph);
 }
 
 /* MATRIX */
@@ -361,12 +397,28 @@ Graph *matrix_to_graph(int **H,
     return graph;
 }
 
+/*
+Deallocate matrix memory
+*/
+void free_matrix(int **H, const int n)
+{
+    int i;
+
+    assert(H != NULL);
+
+    for (i = 0; i < n; i++)
+    {
+        free(H[i]);
+    }
+    free(H);
+}
+
 /* HEAP */
 
 /*
 Create empty min heap
 */
-MinHeap *new_minheap()
+MinHeap *new_heap()
 {
     MinHeap *heap;
     heap = (MinHeap *)safe_malloc(1, sizeof(MinHeap));
@@ -376,6 +428,17 @@ MinHeap *new_minheap()
     heap->n = 0;
 
     return heap;
+}
+
+/*
+Deallocate heap memory
+*/
+void free_heap(MinHeap *heap)
+{
+    assert(heap != NULL);
+
+    free(heap->data);
+    free(heap);
 }
 
 /*
@@ -655,7 +718,7 @@ void dijkstra(Graph *const graph, Node *const src, const int C_cell, const int C
     init_single_source(graph, src, C_cell);
 
     /* fill Q with nodes */
-    Q = new_minheap();
+    Q = new_heap();
     for (i = 0; i < graph->n; i++)
     {
         for (j = 0; j < graph->m; j++)
@@ -678,6 +741,8 @@ void dijkstra(Graph *const graph, Node *const src, const int C_cell, const int C
             adj->e = adj->e->next;
         }
     }
+
+    free_heap(Q);
 }
 
 /* PATH */
@@ -798,6 +863,8 @@ int main(int argc, char *argv[])
     /* convert the H matrix to a graph */
     graph = matrix_to_graph(H, n, m);
 
+    free_matrix(H, n);
+
     /* find lightest path */
     start = graph->nodes[0][0];
     end = graph->nodes[n - 1][m - 1];
@@ -807,6 +874,9 @@ int main(int argc, char *argv[])
 
     /* print the path found */
     print_path(path);
+
+    free(path);
+    free_graph(graph);
 
     return EXIT_SUCCESS;
 }
