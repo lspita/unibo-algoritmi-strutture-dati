@@ -26,7 +26,7 @@ typedef struct Node
     int col; /* x position in matrix */
     int val; /* height value */
 
-    int effort;          /* total effort to reach this node in the path (dijkstra) */
+    long int effort;     /* total effort to reach this node in the path (dijkstra) */
     struct Node *parent; /* parent node in the path (dijkstra) */
 
     int h_index; /* corresponding index in the heap */
@@ -39,9 +39,9 @@ Graph edge
 */
 typedef struct Edge
 {
-    Node *src;  /* source node */
-    Node *dst;  /* destination node */
-    int weight; /* weight of the edge */
+    Node *src;       /* source node */
+    Node *dst;       /* destination node */
+    long int weight; /* weight of the edge */
 
     struct Edge *next; /* next edge in the adjacency list */
 } Edge;
@@ -81,9 +81,9 @@ Output path of nodes
 */
 typedef struct Path
 {
-    Node *head; /* head of nodes list */
-    Node *n;    /* loop sentinel*/
-    int effort; /* total cost of the path */
+    Node *head;      /* head of nodes list */
+    Node *n;         /* loop sentinel*/
+    long int effort; /* total cost of the path */
 } Path;
 
 /* UTILS */
@@ -148,7 +148,7 @@ Node *new_node(const int row, const int col, const int val)
 /*
 Create edge between two nodes
 */
-Edge *new_edge(Node *const src, Node *const dst, const int weight)
+Edge *new_edge(Node *const src, Node *const dst, const long int weight)
 {
     Edge *edge;
 
@@ -227,7 +227,8 @@ while inserting them in the corresponding adjacency list
 */
 void connect_adjacents(Graph *const graph, Node *const src)
 {
-    int i, adj_row, adj_col, weight;
+    int i, adj_row, adj_col;
+    long int weight;
     Node *dst = NULL;
     Edge *edge = NULL;
 
@@ -594,7 +595,7 @@ void heap_extend(MinHeap *const heap)
 /*
 Changes the effort value and updates the heap accordingly
 */
-void heap_decrease(MinHeap *const heap, int i, const int new_effort)
+void heap_decrease(MinHeap *const heap, int i, const long int new_effort)
 {
     int p;
 
@@ -671,7 +672,7 @@ Relax single edge
 */
 void relax(Edge *const edge, MinHeap *const heap, const int C_cell, const int C_height)
 {
-    int new_effort;
+    long int new_effort;
 
     assert(edge != NULL);
     assert(heap != NULL);
@@ -826,7 +827,7 @@ void print_path(Path *const path)
     }
 
     print_coordinates(END_OUTPUT_VAL, END_OUTPUT_VAL);
-    printf("%d\n", path->effort);
+    printf("%ld\n", path->effort);
 }
 
 /* MAIN */
