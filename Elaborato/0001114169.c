@@ -1,3 +1,9 @@
+/*
+Ludovico Maria Spitaleri 0001114169
+Classe A
+ludovico.spitaleri@studio.unibo.it
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
