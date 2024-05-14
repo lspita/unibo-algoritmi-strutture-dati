@@ -102,7 +102,7 @@ int in_bounds(const int i, const int j, const int n, const int m)
 /* MEMORY */
 
 /*
-Try to allocate nxsize bytes of memory to 0 and assert it is allocated (!= NULL)
+Try to allocate `n` x `size` bytes of memory to 0 (calloc) and assert it is allocated (!= NULL)
 */
 void *safe_malloc(const int n, const size_t size)
 {
@@ -115,7 +115,7 @@ void *safe_malloc(const int n, const size_t size)
 }
 
 /*
-Try to extend a memory allocation to nxsize bytes and assert it is allocated (!= NULL)
+Try to extend heap memory at `ptr` to `n` x `size` bytes (realloc) and assert it is allocated (!= NULL)
 */
 void *safe_realloc(void *ptr, const int n, const size_t size)
 {
@@ -146,7 +146,7 @@ Node *new_node(const int row, const int col, const int val)
 }
 
 /*
-Create edge between two nodes
+Create edge between `src` and `dst`
 */
 Edge *new_edge(Node *const src, Node *const dst, const long int weight)
 {
@@ -166,7 +166,7 @@ Edge *new_edge(Node *const src, Node *const dst, const long int weight)
 }
 
 /*
-Calculate height difference between x and y
+Calculate height difference between `x` and `y`
 */
 int height_difference(const int x, const int y)
 {
@@ -174,7 +174,7 @@ int height_difference(const int x, const int y)
 }
 
 /*
-Create an empty adjacency list
+Create empty adjacency list
 */
 AdjacencyList *new_adjacency_list()
 {
@@ -189,7 +189,7 @@ AdjacencyList *new_adjacency_list()
 }
 
 /*
-Deallocate adjacency list memory
+Deallocate adjacency list
 */
 void free_adjacency_list(AdjacencyList *adj)
 {
@@ -210,7 +210,7 @@ void free_adjacency_list(AdjacencyList *adj)
 }
 
 /*
-Head insert an edge to an adjacency list
+Head insert an edge into an adjacency list
 */
 void insert_adjacent(AdjacencyList *const list, Edge *const edge)
 {
@@ -222,8 +222,8 @@ void insert_adjacent(AdjacencyList *const list, Edge *const edge)
 }
 
 /*
-Create edges between src and the 4 adjacent nodes
-while inserting them in the corresponding adjacency list
+Create edges between `src` and the 4 adjacent nodes in the matrix.
+Insert them in the corresponding adjacency list in `graph`
 */
 void connect_adjacents(Graph *const graph, Node *const src)
 {
@@ -259,7 +259,7 @@ void connect_adjacents(Graph *const graph, Node *const src)
 }
 
 /*
-Create new empty graph with n x m nodes
+Create empty graph with `n` x `m` nodes
 */
 Graph *new_graph(const int n, const int m)
 {
@@ -292,7 +292,7 @@ Graph *new_graph(const int n, const int m)
 }
 
 /*
-Deallocate graph memory
+Deallocate graph
 */
 void free_graph(Graph *graph)
 {
@@ -320,14 +320,14 @@ void free_graph(Graph *graph)
 /* MATRIX */
 
 /*
-Read the file and extract the input values
+Read `filein` and extract the input values
 
-Returns: pointer to the H matrix
+Returns: pointer to the `H` matrix
 Output params:
-- C_cell: cell movement weight ant
-- C_height: cell height difference weight ant
-- n: rows of H
-- m: columns of H
+- `C_cell`: cell movement weight ant
+- `C_heigh`t: cell height difference weight ant
+- `n`: rows of `H`
+- `m`: columns of `H`
 */
 int **parse_file(FILE *filein,
                  int *const out_C_cell,
@@ -370,7 +370,7 @@ int **parse_file(FILE *filein,
 }
 
 /*
-Convert the H matrix to a graph
+Convert `H` matrix (`n` x `m`) into a graph
 */
 Graph *matrix_to_graph(int **H,
                        const int n,
@@ -405,7 +405,7 @@ Graph *matrix_to_graph(int **H,
 }
 
 /*
-Deallocate matrix memory
+Deallocate `H` matrix with `n` rows
 */
 void free_matrix(int **H, const int n)
 {
@@ -423,7 +423,7 @@ void free_matrix(int **H, const int n)
 /* HEAP */
 
 /*
-Create empty min heap
+Create heap
 */
 MinHeap *new_heap()
 {
@@ -438,7 +438,7 @@ MinHeap *new_heap()
 }
 
 /*
-Deallocate heap memory
+Deallocate heap
 */
 void free_heap(MinHeap *heap)
 {
@@ -449,7 +449,7 @@ void free_heap(MinHeap *heap)
 }
 
 /*
-Check if i is a valid index in the h heap
+Check if `i` is a valid index for `heap`
 */
 int heap_valid(const MinHeap *const heap, const int i)
 {
@@ -459,7 +459,7 @@ int heap_valid(const MinHeap *const heap, const int i)
 }
 
 /*
-Check if heap is empty
+Check if `heap` is empty
 */
 int heap_empty(const MinHeap *const heap)
 {
@@ -469,7 +469,7 @@ int heap_empty(const MinHeap *const heap)
 }
 
 /*
-Return root of heap
+Return root of `heap`
 */
 Node *heap_min(const MinHeap *const heap)
 {
@@ -484,7 +484,7 @@ Node *heap_min(const MinHeap *const heap)
 }
 
 /*
-Set heap[i] = node and update node.h_index
+Set `heap[i] = node` and update `node.h_index`
 */
 void heap_set(MinHeap *const heap, const int i, Node *const node)
 {
@@ -497,7 +497,7 @@ void heap_set(MinHeap *const heap, const int i, Node *const node)
 }
 
 /*
-Return key at heap[i]
+Return key at `heap[i]`
 */
 int heap_get(MinHeap *const heap, const int i)
 {
@@ -508,7 +508,7 @@ int heap_get(MinHeap *const heap, const int i)
 }
 
 /*
-Return parent node index of i
+Return parent node index of `i`
 */
 int heap_parent(const int i)
 {
@@ -516,7 +516,7 @@ int heap_parent(const int i)
 }
 
 /*
-Return left child node index of i
+Return left child node index of `i`
 */
 int heap_left(const int i)
 {
@@ -524,7 +524,7 @@ int heap_left(const int i)
 }
 
 /*
-Return right child node index of i
+Return right child node index of `i`
 */
 int heap_right(const int i)
 {
@@ -532,7 +532,7 @@ int heap_right(const int i)
 }
 
 /*
-Swap heap[i] and heap[j]
+Swap `heap[i]` and `heap[j]`
 */
 void heap_swap(MinHeap *const heap, const int i, const int j)
 {
@@ -548,7 +548,7 @@ void heap_swap(MinHeap *const heap, const int i, const int j)
 }
 
 /*
-Transform single position to follow the min heap structure
+Move `heap[i]` to follow the min heap structure
 */
 void min_heapify(MinHeap *const heap, const int i)
 {
@@ -578,7 +578,7 @@ void min_heapify(MinHeap *const heap, const int i)
 }
 
 /*
-Extend size of heap vector by 1
+Extend size of `heap` data vector by 1
 */
 void heap_extend(MinHeap *const heap)
 {
@@ -593,17 +593,17 @@ void heap_extend(MinHeap *const heap)
 }
 
 /*
-Changes the effort value and updates the heap accordingly
+Set `heap[i] = key` and transform to mantain structure. `key` must be less than current `heap[i]`
 */
-void heap_decrease(MinHeap *const heap, int i, const long int new_effort)
+void heap_decrease(MinHeap *const heap, int i, const long int key)
 {
     int p;
 
     assert(heap != NULL);
     assert(heap_valid(heap, i));
-    assert(new_effort <= heap->data[i]->effort);
+    assert(key <= heap->data[i]->effort);
 
-    heap->data[i]->effort = new_effort;
+    heap->data[i]->effort = key;
     p = heap_parent(i);
     while (heap_valid(heap, p) && heap_get(heap, p) > heap_get(heap, i))
     {
@@ -614,7 +614,7 @@ void heap_decrease(MinHeap *const heap, int i, const long int new_effort)
 }
 
 /*
-Insert node in the heap with the specified effort value
+Insert `node` in `heap`
 */
 void heap_insert(MinHeap *const heap, Node *const node)
 {
@@ -630,7 +630,7 @@ void heap_insert(MinHeap *const heap, Node *const node)
 }
 
 /*
-Extract root of heap
+Extract root of `heap`
 */
 Node *heap_extract(MinHeap *const heap)
 {
@@ -664,11 +664,11 @@ Per la ricerca del percorso più leggero, verrà utilizzato Dijkstra in quanto
 - Sono presenti cicli, il che scarta l'ordinamento topologico
 - I pesi sono tutti positivi (differenza di altitudine x costanti positive)
 - Il numero di archi del grafo è theta(n) (una cella della matrice ha max 4 adiacenti),
-  implementando quindi la coda utilizzata da Dijkstra tramite un heap, otteniamo un costo theta(nlog(n))
+  implementando quindi la coda con priorità tramite un heap, otteniamo un costo theta(nlog(n))
 */
 
 /*
-Relax single edge
+Relax `edge` and update `edge.dst` position in heap
 */
 void relax(Edge *const edge, MinHeap *const heap, const int C_cell, const int C_height)
 {
@@ -686,7 +686,7 @@ void relax(Edge *const edge, MinHeap *const heap, const int C_cell, const int C_
 }
 
 /*
-Initialize graph nodes to calculate shortest paths from src
+Initialize `graph` nodes to apply dijkstra algorithm from `src`
 */
 void init_single_source(Graph *const graph, Node *const src, const int C_cell)
 {
@@ -710,7 +710,7 @@ void init_single_source(Graph *const graph, Node *const src, const int C_cell)
 }
 
 /*
-Find lightest path from src to every node
+Find lightest path from `src` to every node in `graph`
 */
 void dijkstra(Graph *const graph, Node *const src, const int C_cell, const int C_height)
 {
@@ -755,7 +755,7 @@ void dijkstra(Graph *const graph, Node *const src, const int C_cell, const int C
 /* PATH */
 
 /*
-Create new empty nodes path
+Create path
 */
 Path *new_path()
 {
@@ -769,7 +769,7 @@ Path *new_path()
 }
 
 /*
-Add node to the path and increase the total path effort
+Head insert `node` into `path` and update `path.effort`
 */
 void push_node(Path *const path, Node *const node)
 {
@@ -781,7 +781,7 @@ void push_node(Path *const path, Node *const node)
 }
 
 /*
-Return path to dst based of previously executed dijkstra algorithm
+Return path to `dst` based of previously executed dijkstra algorithm
 */
 Path *extract_path(Node *const dst)
 {
@@ -804,7 +804,7 @@ Path *extract_path(Node *const dst)
 }
 
 /*
-Print x y values divided by space and with a new line after
+Print formatted `row`,`col` values
 */
 void print_coordinates(const int row, const int col)
 {
@@ -812,7 +812,7 @@ void print_coordinates(const int row, const int col)
 }
 
 /*
-Print path nodes and effort
+Print `path` nodes and effort
 */
 void print_path(Path *const path)
 {
@@ -843,15 +843,12 @@ int main(int argc, char *argv[])
     Path *path;
 
     /* get file name from command arguments */
-
     if (argc != 2)
     {
         fprintf(stderr, "Invocare il programma con: %s input_file\n", argv[0]);
         return EXIT_FAILURE;
     }
     filename = argv[1];
-
-    /* filename = "test/test1.in"; */ /* DEBUG */
 
     filein = fopen(filename, "r");
     if (filein == NULL)
