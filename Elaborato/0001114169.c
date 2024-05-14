@@ -89,7 +89,7 @@ typedef struct Path
 /* UTILS */
 
 /*
-Check if i,j are between 0..n,m
+Check if `i`,`j` are between 0..`n`,`m`
 */
 int in_bounds(const int i, const int j, const int n, const int m)
 {
