@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 TESTS_PATH="test/"
 RESULTS_PATH="results/"
